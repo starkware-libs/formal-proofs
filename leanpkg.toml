@@ -1,8 +1,8 @@
 [package]
 name = "cairo-lean"
 version = "0.1"
-lean_version = "leanprover-community/lean:3.32.1"
+lean_version = "leanprover-community/lean:3.46.0"
 path = "src"
 
 [dependencies]
-mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "6823886c7e91bd92d90cd754ee82e45b7de90a4a"}
+mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "c241a033734908a14bf6760e8407e19afd6f4a31"}
