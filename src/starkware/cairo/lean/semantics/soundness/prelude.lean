@@ -58,6 +58,12 @@ by { apply nat.cast_inj_of_lt_char _ _ h; rwa PRIME.char_eq }
 lemma int_coe_inj {i j : ℤ} (h : (i : F) = (j : F)) (h' : abs (j - i) < PRIME) : i = j :=
 int.cast_inj_of_lt_char charF h h'
 
+lemma nat_coe_field_zero {x : F} {n : ℕ} (h_lt : n < PRIME) (h_cast: x = ↑n): x = 0 → n = 0 :=
+begin
+  intro h_zero, rw [h_cast, ←nat.cast_zero] at h_zero,
+  apply PRIME.nat_coe_field_inj h_lt _ h_zero, rw [PRIME], norm_num1,
+end
+
 lemma nat_cast_mul_eq_one {m n : ℕ} (h : m * n % PRIME = 1) :
   ↑m * ↑n = (1 : F) :=
 begin

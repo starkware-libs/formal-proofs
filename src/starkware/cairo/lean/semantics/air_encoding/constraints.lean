@@ -8,6 +8,7 @@ open_locale big_operators
 
 structure input_data_aux (F : Type*) :=
 (T        : nat)
+(rc16_len : nat)           -- number of 16-bit range-checked elements
 (pc_I     : F)
 (pc_F     : F)
 (ap_I     : F)
@@ -15,6 +16,9 @@ structure input_data_aux (F : Type*) :=
 (mem_star : F → option F)
 (rc_min   : nat)
 (rc_max   : nat)
+(initial_rc_addr : nat)    -- for range check builtin, first range-checked address
+(rc_len          : nat)    -- for range check builtin, number of range-checked values
+(rc_to_rc16      : fin rc_len → fin 8 → fin rc16_len)
 /- constraints -/
 (h_rc_lt  : rc_max < 2^16)
 (h_rc_le  : rc_min ≤ rc_max)
@@ -71,24 +75,28 @@ structures.
 -/
 
 structure memory_embedding_constraints {F : Type*} [field F] [fintype F]
-  (T        : nat)
-  (pc       : fin T → F)
-  (inst     : fin T → F)
-  (dst_addr : fin T → F)
-  (dst      : fin T → F)
-  (op0_addr : fin T → F)
-  (op0      : fin T → F)
-  (op1_addr : fin T → F)
-  (op1      : fin T → F)
-  (mem_star : F → option F)
-  (n        : nat)
-  (a        : fin (n + 1) → F)
-  (v        : fin (n + 1) → F) :=
+  (T         : nat)
+  (rc_len    : nat)
+  (pc        : fin T → F)
+  (inst      : fin T → F)
+  (dst_addr  : fin T → F)
+  (dst       : fin T → F)
+  (op0_addr  : fin T → F)
+  (op0       : fin T → F)
+  (op1_addr  : fin T → F)
+  (op1       : fin T → F)
+  (rc_addr   : fin rc_len → F)    -- range check builtin
+  (rc_val    : fin rc_len → F)
+  (mem_star  : F → option F)
+  (n         : nat)
+  (a         : fin (n + 1) → F)
+  (v         : fin (n + 1) → F) :=
 /- embedding of data -/
 (embed_inst            : fin T → fin (n + 1))
 (embed_dst             : fin T → fin (n + 1))
 (embed_op0             : fin T → fin (n + 1))
 (embed_op1             : fin T → fin (n + 1))
+(embed_rc              : fin rc_len → fin (n + 1))
 (embed_mem             : mem_dom mem_star → fin (n + 1))
 (h_embed_pc            : ∀ i, a (embed_inst i) = pc i)
 (h_embed_inst          : ∀ i, v (embed_inst i) = inst i)
@@ -98,6 +106,8 @@ structure memory_embedding_constraints {F : Type*} [field F] [fintype F]
 (h_embed_op0           : ∀ i, v (embed_op0 i)  = op0 i)
 (h_embed_op1_addr      : ∀ i, a (embed_op1 i)  = op1_addr i)
 (h_embed_op1           : ∀ i, v (embed_op1 i)  = op1 i)
+(h_embed_rc_addr       : ∀ i, a (embed_rc i)   = rc_addr i)
+(h_embed_rc            : ∀ i, v (embed_rc i)   = rc_val i)
 (h_embed_dom           : ∀ i : mem_dom mem_star, a (embed_mem i) = 0)
 (h_embed_val           : ∀ i : mem_dom mem_star, v (embed_mem i) = 0)
 (h_embed_mem_inj       : function.injective embed_mem)
@@ -105,6 +115,7 @@ structure memory_embedding_constraints {F : Type*} [field F] [fintype F]
 (h_embed_mem_disj_dst  : ∀ i j, embed_mem i ≠ embed_dst j)
 (h_embed_mem_disj_op0  : ∀ i j, embed_mem i ≠ embed_op0 j)
 (h_embed_mem_disj_op1  : ∀ i j, embed_mem i ≠ embed_op1 j)
+(h_embed_mem_disj_rc   : ∀ i j, embed_mem i ≠ embed_rc j)
 
 structure memory_block_constraints {F : Type*} [field F] [fintype F]
   (n        : nat)
@@ -126,6 +137,7 @@ structure memory_block_constraints {F : Type*} [field F] [fintype F]
 
 structure memory_constraints {F : Type*} [field F] [fintype F]
   (T        : nat)
+  (rc_len   : nat)
   (pc       : fin T → F)
   (inst     : fin T → F)
   (dst_addr : fin T → F)
@@ -134,12 +146,14 @@ structure memory_constraints {F : Type*} [field F] [fintype F]
   (op0      : fin T → F)
   (op1_addr : fin T → F)
   (op1      : fin T → F)
+  (rc_addr  : fin rc_len → F)    -- range check builtin
+  (rc_val   : fin rc_len → F)
   (mem_star : F → option F) :=
 (n       : nat)
 (a       : fin (n + 1) → F)
 (v       : fin (n + 1) → F)
-(em      : memory_embedding_constraints T pc inst dst_addr dst op0_addr op0 op1_addr op1 mem_star
-              n a v)
+(em      : memory_embedding_constraints T rc_len pc inst dst_addr dst op0_addr op0 op1_addr op1
+              rc_addr rc_val mem_star n a v)
 (mb      : memory_block_constraints n a v mem_star)
 (h_n_lt  : n < ring_char F)
 
@@ -149,9 +163,11 @@ Range check constraints.
 
 structure range_check_constraints {F : Type*} [field F]
   (T              : nat)
+  (rc16_len       : nat)
   (off_op0_tilde  : fin T → F)
   (off_op1_tilde  : fin T → F)
   (off_dst_tilde  : fin T → F)
+  (rc16_val       : fin rc16_len → F)
   (rc_min         : nat)
   (rc_max         : nat) :=
 (n  : nat)
@@ -163,9 +179,11 @@ structure range_check_constraints {F : Type*} [field F]
 (embed_off_op0 : fin T → fin (n + 1))
 (embed_off_op1 : fin T → fin (n + 1))
 (embed_off_dst : fin T → fin (n + 1))
+(embed_rc16_vals : fin rc16_len → fin (n + 1))
 (h_embed_op0   : ∀ i, a (embed_off_op0 i) = off_op0_tilde i)
 (h_embed_op1   : ∀ i, a (embed_off_op1 i) = off_op1_tilde i)
 (h_embed_dst   : ∀ i, a (embed_off_dst i) = off_dst_tilde i)
+(h_embed_rc16  : ∀ i, a (embed_rc16_vals i) = rc16_val i)
 /- constraints -/
 (h_continuity  : ∀ i : fin n, (a' i.succ - a' i.cast_succ) * (a' i.succ - a' i.cast_succ - 1) = 0)
 (h_initial     : (z - a' 0) * p 0 = z - a 0)
@@ -244,6 +262,31 @@ structure step_constraints {F : Type*} [field F]
                                (1 - f_tilde.f_opcode_ret - f_tilde.f_opcode_call) * fp)
 
 /-
+Constraints defining the range check builtin.
+-/
+
+structure rc_builtin_constraints {F : Type*} [field F]
+  (rc16_len : ℕ)
+  (initial_rc_addr : ℕ)
+  (rc_len : ℕ)
+  (rc16_val : fin rc16_len → F)
+  (rc_addr : fin rc_len → F)  -- rc_builtin__mem__addr
+  (rc_val  : fin rc_len → F)  -- rc_builtin__mem__value
+  (rc_to_rc16 : fin rc_len → fin 8 → fin rc16_len) :=
+(h_rc_init_addr : ∀ h : 0 < rc_len, rc_addr ⟨0, h⟩ = initial_rc_addr)
+(h_rc_addr_step : ∀ i : ℕ, ∀ h : i.succ < rc_len,
+                    rc_addr ⟨i.succ, h⟩ = rc_addr ⟨i, (nat.lt_succ_self _).trans h⟩  + 1)
+(h_rc_value : ∀ i : fin rc_len,
+  rc_val i = (((((((rc16_val (rc_to_rc16 i 0))
+    * 2^16 + rc16_val (rc_to_rc16 i 1))
+    * 2^16 + rc16_val (rc_to_rc16 i 2))
+    * 2^16 + rc16_val (rc_to_rc16 i 3))
+    * 2^16 + rc16_val (rc_to_rc16 i 4))
+    * 2^16 + rc16_val (rc_to_rc16 i 5))
+    * 2^16 + rc16_val (rc_to_rc16 i 6))
+    * 2^16 + rc16_val (rc_to_rc16 i 7))
+
+/-
 All the trace data and constraints (except for the probabilistic assumptions, and assumption
   `char F > 2^16`)
 -/
@@ -258,6 +301,7 @@ structure constraints {F : Type*} [field F] [fintype F] (inp : input_data_aux F)
 (off_op0_tilde  : fin inp.T → F)
 (off_op1_tilde  : fin inp.T → F)
 (off_dst_tilde  : fin inp.T → F)
+(rc16_val       : fin inp.rc16_len → F)
 (f_tilde        : fin inp.T → tilde_type F)
 /- the memory accesses-/
 (dst_addr       : fin inp.T → F)
@@ -266,6 +310,8 @@ structure constraints {F : Type*} [field F] [fintype F] (inp : input_data_aux F)
 (op0            : fin inp.T → F)
 (op1_addr       : fin inp.T → F)
 (op1            : fin inp.T → F)
+(rc_addr        : fin inp.rc_len → F)
+(rc_val         : fin inp.rc_len → F)
 /- starting and ending constraints -/
 (h_pc_I         : pc 0 = inp.pc_I)
 (h_ap_I         : ap 0 = inp.ap_I)
@@ -273,10 +319,10 @@ structure constraints {F : Type*} [field F] [fintype F] (inp : input_data_aux F)
 (h_pc_F         : pc (fin.last inp.T) = inp.pc_F)
 (h_ap_F         : ap (fin.last inp.T) = inp.ap_F)
 /- the main constraints -/
-(mc             : memory_constraints inp.T (λ i : fin inp.T, pc (i.cast_succ)) inst
-                    dst_addr dst op0_addr op0 op1_addr op1 inp.mem_star)
-(rc             : range_check_constraints inp.T off_op0_tilde off_op1_tilde off_dst_tilde
-                    inp.rc_min inp.rc_max)
+(mc             : memory_constraints inp.T inp.rc_len (λ i : fin inp.T, pc (i.cast_succ)) inst
+                    dst_addr dst op0_addr op0 op1_addr op1 rc_addr rc_val inp.mem_star)
+(rc             : range_check_constraints inp.T inp.rc16_len off_op0_tilde off_op1_tilde off_dst_tilde
+                    rc16_val inp.rc_min inp.rc_max)
 (ic             : ∀ i : fin inp.T, instruction_constraints
                           (inst i)
                           (off_op0_tilde i)
@@ -300,3 +346,11 @@ structure constraints {F : Type*} [field F] [fintype F] (inp : input_data_aux F)
                           (dst i)
                           (op0 i)
                           (op1 i))
+(rcb            : rc_builtin_constraints
+                          inp.rc16_len
+                          inp.initial_rc_addr
+                          inp.rc_len
+                          rc16_val
+                          rc_addr
+                          rc_val
+                          inp.rc_to_rc16)

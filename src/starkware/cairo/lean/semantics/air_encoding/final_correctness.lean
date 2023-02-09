@@ -57,15 +57,21 @@ theorem final_correctness
       memory inp pd c ci ∧
       rc16 inp pd c ci ∧
       public_memory c ∧
+      rc_builtin inp pd c ∧
       toplevel_constraints inp c ∧
       /- probabilistic constraints -/
       pd.memory__multi_column_perm__hash_interaction_elm0 ∉ bad1 ∧
       pd.memory__multi_column_perm__perm__interaction_elm ∉ bad2 ∧
       pd.memory__multi_column_perm__perm__interaction_elm ≠ 0 ∧
       pd.rc16__perm__interaction_elm ∉ bad3 →
+      let -- number of execution steps
+          T := inp.trace_length / 16 - 1,
+          -- memory elements checked by range check builtin
+          rc_len := inp.trace_length / 128 in
       /- the conclusion -/
-      let T := inp.trace_length / 16 - 1 in
-      ∃ mem : F → F, option.fn_extends mem inp.m_star ∧
+      ∃ mem : F → F,
+        option.fn_extends mem inp.m_star ∧
+        (∀ i < rc_len, ∃ n < 2^128, mem (pd.initial_rc_addr + i) = ↑n) ∧
         ∃ exec : fin (T + 1) → register_state F,
           (exec 0).pc = inp.initial_pc ∧
           (exec 0).ap = inp.initial_ap ∧
@@ -81,10 +87,11 @@ begin
   use bad2_bound pd pc.h_card_dom _ _,
   use bad3_bound pc.h_card_dom _ _,
   intro ci,
-  rintros ⟨cd, ops, upd, opcodes, m, rc, pm, iandf, prob1, prob2, prob3, prob4⟩,
+  rintros ⟨cd, ops, upd, opcodes, m, rc, pm, rcb, iandf, prob1, prob2, prob3, prob4⟩,
+  dsimp,
   exact execution_exists char_ge
     (inp.to_input_data_aux pd pc.rc_max_lt pc.rc_min_le)
-    (to_constraints cd ops upd opcodes m rc pm iandf pc.h_mem_star pc.h_card_dom
+    (to_constraints cd ops upd opcodes m rc pm rcb iandf pc.h_mem_star pc.h_card_dom
       pc.public_memory_prod_eq_one pc.rc_max_lt pc.rc_min_le pc.trace_length_le_char)
     { hprob₁ := prob1,
       hprob₂ := prob2,

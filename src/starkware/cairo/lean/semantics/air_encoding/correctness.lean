@@ -11,6 +11,7 @@ import starkware.cairo.lean.semantics.air_encoding.memory
 import starkware.cairo.lean.semantics.air_encoding.range_check
 import starkware.cairo.lean.semantics.air_encoding.instruction
 import starkware.cairo.lean.semantics.air_encoding.step
+import starkware.cairo.lean.semantics.air_encoding.range_check_builtin
 
 open_locale classical
 
@@ -32,12 +33,15 @@ structure hprob {inp : input_data_aux F} (c : constraints inp) :=
 
 /--
 The main theorem: if the constraints hold for the trace data, then for any memory assignment
-that agrees with the input data, there is an execution trace that agrees with the input data.
+that agrees with the input data, the memory locations associated with the range check builtin
+have been range checked, and there is an execution trace that agrees with the input data.
 -/
 
 theorem execution_exists (char_ge : ring_char F ≥ 2^63)
     (inp : input_data_aux F) (c : constraints inp) (hp : hprob c) :
-  ∃ mem : F → F, option.fn_extends mem inp.mem_star ∧
+  ∃ mem : F → F,
+    option.fn_extends mem inp.mem_star ∧
+    (∀ i < inp.rc_len, ∃ n < 2^128, mem (inp.initial_rc_addr + i) = ↑n) ∧
     ∃ exec : fin (inp.T + 1) → register_state F,
       (exec 0).pc = inp.pc_I ∧
       (exec 0).ap = inp.ap_I ∧
@@ -76,6 +80,12 @@ begin
           c.mc.mb.h_final c.mc.em.h_embed_op1_addr c.mc.em.h_embed_op1 c.mc.em.h_embed_dom
           c.mc.em.h_embed_val c.mc.em.h_embed_mem_inj c.mc.em.h_embed_mem_disj_op1
           hp.hprob₃ hp.hprob₁ hp.hprob₂ c.mc.h_n_lt,
+  have mem_rc_addr : ∀ i, m (c.rc_addr i) = c.rc_val i :=
+        mem_rc_addr
+          c.mc.mb.h_continuity c.mc.mb.h_single_valued c.mc.mb.h_initial c.mc.mb.h_cumulative
+          c.mc.mb.h_final c.mc.em.h_embed_rc_addr c.mc.em.h_embed_rc c.mc.em.h_embed_dom
+          c.mc.em.h_embed_val c.mc.em.h_embed_mem_inj c.mc.em.h_embed_mem_disj_rc
+          hp.hprob₃ hp.hprob₁ hp.hprob₂ c.mc.h_n_lt,
   have off_op0_in_range : ∀ i, ∃ k : ℕ, k < 2^16 ∧ c.off_op0_tilde i = ↑k :=
         off_op0_in_range c.rc.h_continuity c.rc.h_initial c.rc.h_cumulative c.rc.h_final
         c.rc.h_rc_min c.rc.h_rc_max c.rc.h_embed_op0 c.rc.h_n_lt inp.h_rc_lt inp.h_rc_le char_gt
@@ -88,7 +98,19 @@ begin
         off_dst_in_range c.rc.h_continuity c.rc.h_initial c.rc.h_cumulative c.rc.h_final
         c.rc.h_rc_min c.rc.h_rc_max c.rc.h_embed_dst c.rc.h_n_lt inp.h_rc_lt inp.h_rc_le char_gt
         hp.hprob₄,
-  use [m, mem_extends],
+  have rc16_vals_in_range : ∀ i, ∃ k : ℕ, k < 2^16 ∧ c.rc16_val i = ↑k :=
+        rc16_vals_in_range c.rc.h_continuity c.rc.h_initial c.rc.h_cumulative c.rc.h_final
+        c.rc.h_rc_min c.rc.h_rc_max c.rc.h_embed_rc16 c.rc.h_n_lt inp.h_rc_lt inp.h_rc_le char_gt
+        hp.hprob₄,
+  have range_checked :
+    ∀ i < inp.rc_len, ∃ n < 2^128, m (inp.initial_rc_addr + i) = ↑n,
+  { intros i hi,
+    rcases rc_val_checked rc16_vals_in_range c.rcb.h_rc_value ⟨i, hi⟩ with ⟨n, nlt, neq⟩,
+    use [n, nlt],
+    rw ←neq, dsimp, rw ←mem_rc_addr,
+    rw rc_addr_eq c.rcb.h_rc_init_addr c.rcb.h_rc_addr_step  ⟨i, hi⟩,
+    refl },
+  use [m, mem_extends, range_checked],
   let e := λ i : fin (inp.T + 1), register_state.mk (c.pc i) (c.ap i) (c.fp i),
   use [e, c.h_pc_I, c.h_ap_I, c.h_fp_I, c.h_pc_F, c.h_ap_F],
   intro i,

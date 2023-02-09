@@ -14,10 +14,14 @@ variables {F : Type*}
 
 variable  {T : ℕ}    -- the number of steps in the execution
 
+variable  {rc_len : ℕ}  -- the number of range-checked elements for the range-check builtin
+
 variables {pc       inst
            dst_addr dst
            op0_addr op0
            op1_addr op1  : fin T → F}
+
+variables {rc_addr rc_val : fin rc_len → F}
 
 variables {mem_star : F → option F}
 
@@ -29,6 +33,8 @@ variables {embed_inst
            embed_dst
            embed_op0
            embed_op1     : fin T → fin (n + 1)}
+
+variables {embed_rc      : fin rc_len → fin (n + 1)}
 
 variables {embed_mem     : mem_dom mem_star → fin (n + 1)}
 
@@ -61,6 +67,9 @@ variable h_embed_op0      : ∀ i, v (embed_op0 i)  = op0 i
 variable h_embed_op1_addr : ∀ i, a (embed_op1 i)  = op1_addr i
 variable h_embed_op1      : ∀ i, v (embed_op1 i)  = op1 i
 
+variable h_embed_rc_addr  : ∀ i, a (embed_rc i)   = rc_addr i
+variable h_embed_rc_val   : ∀ i, v (embed_rc i)   = rc_val i
+
 variable h_embed_dom      : ∀ i, a (embed_mem i) = 0
 variable h_embed_val      : ∀ i, v (embed_mem i) = 0
 
@@ -69,6 +78,7 @@ variable h_embed_mem_disj_inst : ∀ i j, embed_mem i ≠ embed_inst j
 variable h_embed_mem_disj_dst  : ∀ i j, embed_mem i ≠ embed_dst j
 variable h_embed_mem_disj_op0  : ∀ i j, embed_mem i ≠ embed_op0 j
 variable h_embed_mem_disj_op1  : ∀ i j, embed_mem i ≠ embed_op1 j
+variable h_embed_mem_disj_rc   : ∀ i j, embed_mem i ≠ embed_rc j
 
 /-
 The memory.
@@ -176,6 +186,31 @@ real_a_embed_inst h_embed_op1_addr h_embed_mem_disj_op1 i
 
 lemma real_v_embed_op1 (i : fin T) : real_v mem_star v embed_mem (embed_op1 i) = op1 i :=
 real_v_embed_inst h_embed_op1 h_embed_mem_disj_op1 i
+
+section
+include h_embed_rc_addr h_embed_mem_disj_rc
+
+lemma real_a_embed_rc (i : fin rc_len) :
+  real_a mem_star a embed_mem (embed_rc i) = rc_addr i :=
+begin
+  rw [real_a], dsimp, rw [dif_neg, h_embed_rc_addr],
+  apply not_exists_of_forall_not, intro j,
+  apply h_embed_mem_disj_rc
+end
+
+end
+
+section
+include h_embed_rc_val h_embed_mem_disj_rc
+
+lemma real_v_embed_rc (i : fin rc_len) : real_v mem_star v embed_mem (embed_rc i) = rc_val i :=
+begin
+  rw [real_v], dsimp, rw [dif_neg, h_embed_rc_val],
+  apply not_exists_of_forall_not, intro j,
+  apply h_embed_mem_disj_rc
+end
+
+end
 
 section
 
@@ -290,6 +325,20 @@ mem_pc h_continuity h_single_valued h_initial h_cumulative h_final h_embed_op0_a
 theorem mem_op1_addr (i : fin T) : mem a' v' (op1_addr i) = op1 i :=
 mem_pc h_continuity h_single_valued h_initial h_cumulative h_final h_embed_op1_addr h_embed_op1
   h_embed_dom h_embed_val h_embed_mem_inj h_embed_mem_disj_op1 h_z_ne_zero hprob₁ hprob₂ h_char_lt i
+
+section
+include h_embed_rc_addr h_embed_rc_val h_embed_mem_disj_rc
+
+theorem mem_rc_addr (i : fin rc_len) : mem a' v' (rc_addr i) = rc_val i :=
+begin
+  rw [←@real_a_embed_rc _ _ rc_addr mem_star _ a embed_rc embed_mem _ _ h_embed_rc_addr
+          h_embed_mem_disj_rc],
+  rw [←@real_v_embed_inst _ _ rc_val mem_star _ v embed_rc embed_mem _ _
+          h_embed_rc_val h_embed_mem_disj_rc],
+  apply mem_unique h_continuity h_single_valued h_initial h_cumulative h_final h_embed_dom
+    h_embed_val h_embed_mem_inj h_z_ne_zero hprob₁ hprob₂ h_char_lt
+end
+end
 
 theorem mem_extends : option.fn_extends (mem a' v') mem_star :=
 begin

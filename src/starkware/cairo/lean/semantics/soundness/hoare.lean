@@ -809,6 +809,35 @@ focus1 $ tactic.use l
 meta def norm_num2 : tactic unit :=
 `[ norm_num1, try { simp only [add_neg_eq_sub] } ]
 
+section
+open interactive interactive.types expr
+
+private meta def mkdef_arg_p_aux : pexpr → parser (name × pexpr)
+| (app (app (macro _ [const `eq _ ]) (local_const x _ _ _)) h) := pure (x, h)
+| _ := fail "parse error"
+
+private meta def mkdef_arg_p : parser (name × pexpr) :=
+with_desc "expr = id" $ parser.pexpr 0 >>= mkdef_arg_p_aux
+
+/--
+`mkdef h : x = t` introduces a new variable `x` into the context with
+assumption `h : x = t`. It is essentially a simplified version of
+`generalize'` with the equation syntax reversed.
+-/
+meta def mkdef (h : parse ident) (_ : parse $ tk ":") (p : parse mkdef_arg_p) :
+  tactic unit :=
+propagate_tags $
+do let (x, p) := p,
+   e ← i_to_expr p,
+   tgt ← target,
+   tgt' ← to_expr ``(Π x, x = %%e → %%tgt),
+   t ← assert h tgt',
+   swap,
+   exact ``(%%t %%e rfl),
+   intro x,
+   intro h
+end
+
 end interactive
 
 end tactic

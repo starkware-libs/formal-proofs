@@ -20,11 +20,13 @@ variable  {T : ℕ}
 
 variables {off_op0_tilde
            off_op1_tilde
-           off_dst_tilde : fin T → F}
+           off_dst_tilde
+           rc16_vals       : fin T → F}
 
 variables {embed_off_op0
            embed_off_op1
-           embed_off_dst : fin T → fin (n + 1)}
+           embed_off_dst
+           embed_rc16_vals : fin T → fin (n + 1)}
 
 /- constraints -/
 
@@ -46,6 +48,8 @@ variable h_embed_op0 : ∀ i, a (embed_off_op0 i) = off_op0_tilde i
 variable h_embed_op1 : ∀ i, a (embed_off_op1 i) = off_op1_tilde i
 
 variable h_embed_dst : ∀ i, a (embed_off_dst i) = off_dst_tilde i
+
+variable h_embed_rc : ∀ i, a (embed_rc16_vals i) = rc16_vals i
 
 variable h_n_lt : n < ring_char F
 
@@ -165,3 +169,7 @@ off_op0_in_range h_continuity h_initial h_cumulative h_final h_rc_min
 theorem off_dst_in_range (i : fin T) : ∃ k : ℕ, k < 2^16 ∧ off_dst_tilde i = ↑k :=
 off_op0_in_range h_continuity h_initial h_cumulative h_final h_rc_min
   h_rc_max h_embed_dst h_n_lt h_rc_lt h_rc_le h_ring_char_gt hprob₃ i
+
+theorem rc16_vals_in_range (i : fin T) : ∃ k : ℕ, k < 2^16 ∧ rc16_vals i = ↑k :=
+off_op0_in_range h_continuity h_initial h_cumulative h_final h_rc_min
+  h_rc_max h_embed_rc h_n_lt h_rc_lt h_rc_le h_ring_char_gt hprob₃ i
