@@ -36,6 +36,16 @@ This repository contains a number of related items.
   a complete verification that the machine code for `recover_public_key` meets its high-level
   specification.
 
+Publications
+------------
+
+- Our verification of the algebraic encoding of Cairo execution traces is described in the paper
+  [A verified algebraic representation of Cairo program execution](https://dl.acm.org/doi/10.1145/3497775.3503675).
+
+- Our verification tools and our verification of Cairo code used to validate cryptographic signatures
+  are described in the paper [A proof-producing compiler for blockchain applications](https://doi.org/10.4230/LIPIcs.ITP.2023.7).
+
+
 Setup
 -----
 
