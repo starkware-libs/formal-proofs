@@ -36,6 +36,10 @@ This repository contains a number of related items.
   a complete verification that the machine code for `recover_public_key` meets its high-level
   specification.
 
+- The folder [lean4](lean4) contains a port of the Cairo semantics to Lean 4. Follow the
+  instructions in the [README](lean4/README.md) file there to use them. Our verification
+  infrastructure for Lean 4 is still a work in progress and these files may change.
+
 Publications
 ------------
 
