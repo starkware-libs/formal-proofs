@@ -9,7 +9,7 @@ import ..signature_recover_public_key_spec
 open tactic
 
 open starkware.cairo.common.cairo_secp.field
-open starkware.cairo.common.cairo_secp.bigint
+open starkware.cairo.common.cairo_secp.bigint3
 open starkware.cairo.common.cairo_secp.constants
 
 variables {F : Type} [field F] [decidable_eq F] [prelude_hyps F]
@@ -20,21 +20,20 @@ variable  σ : register_state F
 
 theorem auto_sound_unreduced_sqr
     -- arguments
-    (a : BigInt3 F)
+    (a : BigInt3 mem)
     -- code is in memory at σ.pc
     (h_mem : mem_at mem code_unreduced_sqr σ.pc)
     -- input arguments on the stack
     (hin_a : a = cast_BigInt3 mem (σ.fp - 5))
     -- conclusion
-  : ensures_ret mem σ (λ κ τ, τ.ap = σ.ap + 12 ∧ spec_unreduced_sqr mem κ a (cast_UnreducedBigInt3 mem (τ.ap - 3))) :=
+  : ensures_ret mem σ (λ κ τ, τ.ap = σ.ap + 12 ∧ spec_unreduced_sqr mem κ a (cast_UnreducedBigInt3  mem (τ.ap - 3))) :=
 begin
   apply ensures_of_ensuresb, intro νbound,
   have h_mem_rec := h_mem,
   unpack_memory code_unreduced_sqr at h_mem with ⟨hpc0, hpc1, hpc2, hpc3, hpc4, hpc5, hpc6, hpc7, hpc8, hpc9, hpc10, hpc11, hpc12, hpc13, hpc14, hpc15⟩,
   -- tempvar
   step_assert_eq hpc0 hpc1 with tv_twice_d00,
-  generalize' hl_rev_twice_d0: (a.d0 * 2 : F) = twice_d0,
-  have hl_twice_d0 := hl_rev_twice_d0.symm, clear hl_rev_twice_d0,
+  mkdef hl_twice_d0 : twice_d0 = (a.d0 * 2 : F),
   have htv_twice_d0: twice_d0 = _, {
     apply eq.symm, apply eq.trans tv_twice_d00,
       try { simp only [add_neg_eq_sub, hin_a, hl_twice_d0] },
@@ -66,8 +65,10 @@ begin
   dsimp [auto_spec_unreduced_sqr],
   try { norm_num1 }, try { arith_simps },
   use_only [twice_d0, hl_twice_d0],
-  try { split, linarith },
-  try { ensures_simps; try { simp only [add_neg_eq_sub, hin_a, hl_twice_d0, htv_twice_d0] }, },
+  try { dsimp }, try { arith_simps },
+  try { split, trivial <|> linarith },
+  try { ensures_simps; try { unfold SECP_REM }, },
+  try { simp only [add_neg_eq_sub, hin_a, hl_twice_d0, htv_twice_d0] },
   try { dsimp [cast_BigInt3, cast_UnreducedBigInt3] },
   try { arith_simps }, try { simp only [hret0, hret1, hret2, hret3, hret4, hret5, hret6, hret7, hret8, hret9, hret10] },
   try { arith_simps; try { split }; triv <|> refl <|> simp <|> abel; try { norm_num } },

@@ -10,6 +10,9 @@
 import starkware.cairo.lean.semantics.soundness.prelude
 import starkware.cairo.common.cairo_secp.constants_spec
 
+import starkware.cairo.common.cairo_secp.bigint3_spec
+
+open starkware.cairo.common.cairo_secp.bigint3
 open starkware.cairo.common.cairo_secp.constants
 
 namespace starkware.cairo.common.cairo_secp.bigint
@@ -20,73 +23,65 @@ variables {F : Type} [field F] [decidable_eq F] [prelude_hyps F]
 
 -- Main scope definitions.
 
-@[ext] structure BigInt3 (F : Type) :=
-  ( d0 : F ) ( d1 : F ) ( d2 : F )
-attribute [derive decidable_eq] BigInt3
-@[ext] structure π_BigInt3 (F : Type) :=
-  ( σ_ptr : F ) ( d0 : F ) ( d1 : F ) ( d2 : F )
-@[reducible] def φ_BigInt3.d0 := 0
-@[reducible] def φ_BigInt3.d1 := 1
-@[reducible] def φ_BigInt3.d2 := 2
-@[reducible] def φ_BigInt3.SIZE := 3
-@[reducible] def cast_BigInt3 (mem : F → F) (p : F) : BigInt3 F := {
-  d0 := mem (p + φ_BigInt3.d0),
-  d1 := mem (p + φ_BigInt3.d1),
-  d2 := mem (p + φ_BigInt3.d2)
-}
-@[reducible] def cast_π_BigInt3 (mem : F → F) (p : F) : π_BigInt3 F := {
-  σ_ptr := mem p,
-  d0 := mem ((mem p) + φ_BigInt3.d0),
-  d1 := mem ((mem p) + φ_BigInt3.d1),
-  d2 := mem ((mem p) + φ_BigInt3.d2)
-}
-instance π_BigInt3_to_F : has_coe (π_BigInt3 F) F := ⟨λ s, s.σ_ptr⟩
-@[ext] structure UnreducedBigInt5 (F : Type) :=
-  ( d0 : F ) ( d1 : F ) ( d2 : F ) ( d3 : F ) ( d4 : F )
-@[ext] structure π_UnreducedBigInt5 (F : Type) :=
-  ( σ_ptr : F ) ( d0 : F ) ( d1 : F ) ( d2 : F ) ( d3 : F ) ( d4 : F )
 @[reducible] def φ_UnreducedBigInt5.d0 := 0
 @[reducible] def φ_UnreducedBigInt5.d1 := 1
 @[reducible] def φ_UnreducedBigInt5.d2 := 2
 @[reducible] def φ_UnreducedBigInt5.d3 := 3
 @[reducible] def φ_UnreducedBigInt5.d4 := 4
+@[ext] structure UnreducedBigInt5 (mem : F → F) :=
+  (d0 : F) (d1 : F) (d2 : F) (d3 : F) (d4 : F)
 @[reducible] def φ_UnreducedBigInt5.SIZE := 5
-@[reducible] def cast_UnreducedBigInt5 (mem : F → F) (p : F) : UnreducedBigInt5 F := {
+@[reducible] def UnreducedBigInt5.SIZE := 5
+@[ext] structure π_UnreducedBigInt5 (mem : F → F) :=
+  (σ_ptr : F) (d0 : F) (d1 : F) (d2 : F) (d3 : F) (d4 : F)
+  (h_d0 : d0 = mem (σ_ptr + φ_UnreducedBigInt5.d0))
+  (h_d1 : d1 = mem (σ_ptr + φ_UnreducedBigInt5.d1))
+  (h_d2 : d2 = mem (σ_ptr + φ_UnreducedBigInt5.d2))
+  (h_d3 : d3 = mem (σ_ptr + φ_UnreducedBigInt5.d3))
+  (h_d4 : d4 = mem (σ_ptr + φ_UnreducedBigInt5.d4))
+@[reducible] def π_UnreducedBigInt5.SIZE := 5
+@[reducible] def cast_UnreducedBigInt5 (mem : F → F) (p : F) : UnreducedBigInt5 mem := {
   d0 := mem (p + φ_UnreducedBigInt5.d0),
   d1 := mem (p + φ_UnreducedBigInt5.d1),
   d2 := mem (p + φ_UnreducedBigInt5.d2),
   d3 := mem (p + φ_UnreducedBigInt5.d3),
   d4 := mem (p + φ_UnreducedBigInt5.d4)
 }
-@[reducible] def cast_π_UnreducedBigInt5 (mem : F → F) (p : F) : π_UnreducedBigInt5 F := {
-  σ_ptr := mem p,
-  d0 := mem ((mem p) + φ_UnreducedBigInt5.d0),
-  d1 := mem ((mem p) + φ_UnreducedBigInt5.d1),
-  d2 := mem ((mem p) + φ_UnreducedBigInt5.d2),
-  d3 := mem ((mem p) + φ_UnreducedBigInt5.d3),
-  d4 := mem ((mem p) + φ_UnreducedBigInt5.d4)
+@[reducible] def cast_π_UnreducedBigInt5 (mem : F → F) (p : F) : π_UnreducedBigInt5 mem := {
+  σ_ptr := p,
+  d0 := mem (p + φ_UnreducedBigInt5.d0),
+  d1 := mem (p + φ_UnreducedBigInt5.d1),
+  d2 := mem (p + φ_UnreducedBigInt5.d2),
+  d3 := mem (p + φ_UnreducedBigInt5.d3),
+  d4 := mem (p + φ_UnreducedBigInt5.d4),
+  h_d0 := rfl,
+  h_d1 := rfl,
+  h_d2 := rfl,
+  h_d3 := rfl,
+  h_d4 := rfl
 }
-instance π_UnreducedBigInt5_to_F : has_coe (π_UnreducedBigInt5 F) F := ⟨λ s, s.σ_ptr⟩
-@[ext] structure UnreducedBigInt3 (F : Type) :=
-  ( d0 : F ) ( d1 : F ) ( d2 : F )
-@[ext] structure π_UnreducedBigInt3 (F : Type) :=
-  ( σ_ptr : F ) ( d0 : F ) ( d1 : F ) ( d2 : F )
-@[reducible] def φ_UnreducedBigInt3.d0 := 0
-@[reducible] def φ_UnreducedBigInt3.d1 := 1
-@[reducible] def φ_UnreducedBigInt3.d2 := 2
-@[reducible] def φ_UnreducedBigInt3.SIZE := 3
-@[reducible] def cast_UnreducedBigInt3 (mem : F → F) (p : F) : UnreducedBigInt3 F := {
-  d0 := mem (p + φ_UnreducedBigInt3.d0),
-  d1 := mem (p + φ_UnreducedBigInt3.d1),
-  d2 := mem (p + φ_UnreducedBigInt3.d2)
-}
-@[reducible] def cast_π_UnreducedBigInt3 (mem : F → F) (p : F) : π_UnreducedBigInt3 F := {
-  σ_ptr := mem p,
-  d0 := mem ((mem p) + φ_UnreducedBigInt3.d0),
-  d1 := mem ((mem p) + φ_UnreducedBigInt3.d1),
-  d2 := mem ((mem p) + φ_UnreducedBigInt3.d2)
-}
-instance π_UnreducedBigInt3_to_F : has_coe (π_UnreducedBigInt3 F) F := ⟨λ s, s.σ_ptr⟩
+instance π_UnreducedBigInt5_to_F {mem : F → F} : has_coe (π_UnreducedBigInt5 mem) F := ⟨λ s, s.σ_ptr⟩
+@[ext] lemma eq_UnreducedBigInt5_ptr {mem : F → F} {x y : π_UnreducedBigInt5 mem} : x.σ_ptr = y.σ_ptr → x = y :=
+begin
+  intros h_p, ext,
+  exact h_p,
+  try { ext }, repeat { rw [x.h_d0, y.h_d0, h_p] },
+  try { ext }, repeat { rw [x.h_d1, y.h_d1, h_p] },
+  try { ext }, repeat { rw [x.h_d2, y.h_d2, h_p] },
+  try { ext }, repeat { rw [x.h_d3, y.h_d3, h_p] },
+  try { ext }, repeat { rw [x.h_d4, y.h_d4, h_p] }
+end
+lemma eq_UnreducedBigInt5_π_cast {mem : F → F} {x y : F} :
+  cast_π_UnreducedBigInt5 mem x = cast_π_UnreducedBigInt5 mem y ↔ x = y :=
+begin
+  apply iff.intro, intro h, cases h, refl, intro h, rw [h],
+end
+lemma eq_UnreducedBigInt5_π_ptr_cast {mem : F → F} {x : π_UnreducedBigInt5 mem} {y : F} :
+  x = cast_π_UnreducedBigInt5 mem y ↔ x.σ_ptr = y :=
+begin
+  apply iff.intro, intro h, cases h, refl, intro h, ext, rw [←h]
+end
+lemma coe_UnreducedBigInt5_π_cast {mem : F → F} {x : F} :(↑(cast_π_UnreducedBigInt5 mem x) : F) = x := rfl
 
 -- End of main scope definitions.
 
@@ -98,23 +93,41 @@ end nondet_bigint3
 
 namespace BigInt3
 
-def add (x y : BigInt3 F) : BigInt3 F :=
+def add {mem : F → F} (x y : BigInt3 mem) : BigInt3 mem :=
 { d0 := x.d0 + y.d0, d1 := x.d1 + y.d1, d2 := x.d2 + y.d2 }
 
-def sub (x y : BigInt3 F) : BigInt3 F :=
+def sub {mem : F → F} (x y : BigInt3 mem) : BigInt3 mem :=
 { d0 := x.d0 - y.d0, d1 := x.d1 - y.d1, d2 := x.d2 - y.d2 }
+
+def toSumBigInt3 {mem : F → F} (x : BigInt3 mem) : SumBigInt3 mem := ⟨x.d0, x.d1, x.d2⟩
 
 end BigInt3
 
 namespace UnreducedBigInt3
 
-def add (x y : UnreducedBigInt3 F) : UnreducedBigInt3 F :=
+def add {mem : F → F} (x y : UnreducedBigInt3 mem) : UnreducedBigInt3 mem :=
 { d0 := x.d0 + y.d0, d1 := x.d1 + y.d1, d2 := x.d2 + y.d2 }
 
-def sub (x y : UnreducedBigInt3 F) : UnreducedBigInt3 F :=
+def sub {mem : F → F} (x y : UnreducedBigInt3 mem) : UnreducedBigInt3 mem :=
 { d0 := x.d0 - y.d0, d1 := x.d1 - y.d1, d2 := x.d2 - y.d2 }
 
 end UnreducedBigInt3
+
+namespace SumBigInt3
+
+def add {mem : F → F} (x y : SumBigInt3 mem) : SumBigInt3 mem :=
+{ d0 := x.d0 + y.d0, d1 := x.d1 + y.d1, d2 := x.d2 + y.d2 }
+
+def sub {mem : F → F} (x y : SumBigInt3 mem) : SumBigInt3 mem :=
+{ d0 := x.d0 - y.d0, d1 := x.d1 - y.d1, d2 := x.d2 - y.d2 }
+
+def toBigInt3 {mem : F → F} (x : SumBigInt3 mem) : BigInt3 mem := ⟨x.d0, x.d1, x.d2⟩
+
+theorem toBigInt3_toSumBigInt3 {mem : F → F} (x : SumBigInt3 mem) :
+  BigInt3.toSumBigInt3 (toBigInt3 x) = x :=
+by ext; refl
+
+end SumBigInt3
 
 @[ext]
 structure bigint3 := (i0 i1 i2 : ℤ)
@@ -123,19 +136,34 @@ namespace bigint3
 
 def val (x : bigint3) : int := x.i2 * ↑BASE^2 + x.i1 * ↑BASE + x.i0
 
-def toBigInt3 (x : bigint3) : BigInt3 F := ⟨x.i0, x.i1, x.i2⟩
+def toBigInt3 {mem : F → F} (x : bigint3) : BigInt3 mem := ⟨x.i0, x.i1, x.i2⟩
 
-def toUnreducedBigInt3 (x : bigint3) : UnreducedBigInt3 F := ⟨x.i0, x.i1, x.i2⟩
+def toUnreducedBigInt3 {mem : F → F} (x : bigint3) : UnreducedBigInt3 mem := ⟨x.i0, x.i1, x.i2⟩
+
+def toSumBigInt3 {mem : F → F} (x : bigint3) : SumBigInt3 mem := ⟨x.i0, x.i1, x.i2⟩
+
+theorem toBigInt3_toSumBigInt3 {mem : F → F} (x : bigint3) :
+  BigInt3.toSumBigInt3 (x.toBigInt3) = (x.toSumBigInt3 : SumBigInt3 mem) :=
+by cases x; refl
+
+theorem eq_toBigInt3_iff_eq_toSumBigInt3 {mem : F → F} {x : SumBigInt3 mem} {ix : bigint3} :
+  x = ix.toSumBigInt3 ↔ SumBigInt3.toBigInt3 x = ix.toBigInt3 :=
+begin
+  split,
+  { intro h, rw [h], refl },
+  intro h,
+  rw [← toBigInt3_toSumBigInt3, ← h, SumBigInt3.toBigInt3_toSumBigInt3]
+end
 
 def add (x y : bigint3) : bigint3 :=
 { i0 := x.i0 + y.i0, i1 := x.i1 + y.i1, i2 := x.i2 + y.i2 }
 
-theorem toBigInt3_add (x y : bigint3) : ((x.add y).toBigInt3 : BigInt3 F) =
+theorem toBigInt3_add {mem : F → F} (x y : bigint3) : ((x.add y).toBigInt3 : BigInt3 mem) =
   BigInt3.add (x.toBigInt3) (y.toBigInt3) :=
 by simp [BigInt3.add, toBigInt3, bigint3.add]
 
-theorem toUnreducedBigInt3_add (x y : bigint3) :
-    ((x.add y).toUnreducedBigInt3 : UnreducedBigInt3 F) =
+theorem toUnreducedBigInt3_add {mem : F → F} (x y : bigint3) :
+    ((x.add y).toUnreducedBigInt3 : UnreducedBigInt3 mem) =
   UnreducedBigInt3.add (x.toUnreducedBigInt3) (y.toUnreducedBigInt3) :=
 by simp [UnreducedBigInt3.add, toUnreducedBigInt3, bigint3.add]
 
@@ -145,11 +173,11 @@ by { simp [val, add], ring }
 def sub (x y : bigint3) : bigint3 :=
 { i0 := x.i0 - y.i0, i1 := x.i1 - y.i1, i2 := x.i2 - y.i2 }
 
-theorem toBigInt3_sub (x y : bigint3) : ((x.sub y).toBigInt3 : BigInt3 F) =
+theorem toBigInt3_sub {mem : F → F} (x y : bigint3) : ((x.sub y).toBigInt3 : BigInt3 mem) =
   BigInt3.sub (x.toBigInt3) (y.toBigInt3) :=
 by simp [BigInt3.sub, toBigInt3, bigint3.sub]
 
-theorem toUnreducedBigInt3_sub (x y : bigint3) : ((x.sub y).toUnreducedBigInt3 : UnreducedBigInt3 F) =
+theorem toUnreducedBigInt3_sub {mem : F → F} (x y : bigint3) : ((x.sub y).toUnreducedBigInt3 : UnreducedBigInt3 mem) =
   UnreducedBigInt3.sub (x.toUnreducedBigInt3) (y.toUnreducedBigInt3) :=
 by simp [UnreducedBigInt3.sub, toUnreducedBigInt3, bigint3.sub]
 
@@ -272,11 +300,11 @@ bounded_mul hx hx
 
 end bigint3
 
-theorem bigint3_eqs {x : BigInt3 F} {i0 i1 i2 : ℤ} (h : x = (bigint3.mk i0 i1 i2).toBigInt3) :
+theorem bigint3_eqs {mem : F → F} {x : BigInt3 mem} {i0 i1 i2 : ℤ} (h : x = (bigint3.mk i0 i1 i2).toBigInt3) :
   x.d0 = i0 ∧ x.d1 = i1 ∧ x.d2 = i2 :=
 by { rwa BigInt3.ext_iff at h }
 
-theorem unreduced_bigint3_eqs {x : UnreducedBigInt3 F} {i0 i1 i2 : ℤ} (h : x = (bigint3.mk i0 i1 i2).toUnreducedBigInt3) :
+theorem unreduced_bigint3_eqs {mem : F → F} {x : UnreducedBigInt3 mem} {i0 i1 i2 : ℤ} (h : x = (bigint3.mk i0 i1 i2).toUnreducedBigInt3) :
   x.d0 = i0 ∧ x.d1 = i1 ∧ x.d2 = i2 :=
 by { rwa UnreducedBigInt3.ext_iff at h }
 
@@ -296,8 +324,8 @@ begin
   norm_num
 end
 
-theorem toBigInt3_eq_toBigInt3_of_bounded_3BASE {a b : bigint3}
-    (heq : (a.toBigInt3 : BigInt3 F) = b.toBigInt3)
+theorem toBigInt3_eq_toBigInt3_of_bounded_3BASE {mem : F → F} {a b : bigint3}
+    (heq : (a.toBigInt3 : BigInt3 mem) = b.toBigInt3)
     (abdd : a.bounded (3 * BASE - 1))
     (bbdd : b.bounded (3 * BASE - 1)) :
   a = b :=
@@ -309,12 +337,12 @@ begin
   { apply cast_int_eq_of_bdd_3BASE heq.2.2 abdd.2.2 bbdd.2.2 }
 end
 
-theorem toBigInt3_eq_zero_of_bounded_3BASE {a : bigint3}
-    (heq : (a.toBigInt3 : BigInt3 F) = ⟨0, 0, 0⟩)
+theorem toBigInt3_eq_zero_of_bounded_3BASE {mem : F → F} {a : bigint3}
+    (heq : (a.toBigInt3 : BigInt3 mem) = ⟨0, 0, 0⟩)
     (abdd : a.bounded (3 * BASE - 1)) :
   a = ⟨0, 0, 0⟩ :=
 begin
-  have : (a.toBigInt3 : BigInt3 F) = bigint3.toBigInt3 ⟨0, 0, 0⟩,
+  have : (a.toBigInt3 : BigInt3 mem) = bigint3.toBigInt3 ⟨0, 0, 0⟩,
   { rw heq, simp [bigint3.toBigInt3] },
   apply toBigInt3_eq_toBigInt3_of_bounded_3BASE this abdd,
   simp [bigint3.bounded],
@@ -330,28 +358,29 @@ def bigint3.bigint5_mul (ix iy : bigint3) : bigint5 :=
   i3 := ix.i1 * iy.i2 + ix.i2 * iy.i1,
   i4 := ix.i2 * iy.i2 }
 
-def BigInt3.UnreducedBigInt5_mul (x y : BigInt3 F) : UnreducedBigInt5 F :=
+def BigInt3.UnreducedBigInt5_mul {mem : F → F} (x y : BigInt3 mem) : UnreducedBigInt5 mem :=
 { d0 := x.d0 * y.d0,
   d1 := x.d0 * y.d1 + x.d1 * y.d0,
   d2 := x.d0 * y.d2 + x.d1 * y.d1 + x.d2 * y.d0,
   d3 := x.d1 * y.d2 + x.d2 * y.d1,
   d4 := x.d2 * y.d2 }
 
-def bigint5.toUnreducedBigInt5 (x : bigint5) : UnreducedBigInt5 F := ⟨x.i0, x.i1, x.i2, x.i3, x.i4⟩
+def bigint5.toUnreducedBigInt5 {mem : F → F} (x : bigint5) : UnreducedBigInt5 mem := ⟨x.i0, x.i1, x.i2, x.i3, x.i4⟩
 
-theorem bigint3.bigint5_mul_toUnreducedBigInt5 (ix iy : bigint3) :
-  ((ix.bigint5_mul iy).toUnreducedBigInt5 : UnreducedBigInt5 F) =
-    (ix.toBigInt3).UnreducedBigInt5_mul (iy.toBigInt3) :=
+theorem bigint3.bigint5_mul_toUnreducedBigInt5 {mem : F → F} (ix iy : bigint3) :
+  ((ix.bigint5_mul iy).toUnreducedBigInt5 : UnreducedBigInt5 mem) =
+    BigInt3.UnreducedBigInt5_mul (ix.toBigInt3) (iy.toBigInt3) :=
 by simp [bigint5.toUnreducedBigInt5, bigint3.toBigInt3, bigint3.bigint5_mul,
        BigInt3.UnreducedBigInt5_mul]
 
 def bigint3.to_bigint5 (ix : bigint3) : bigint5 := ⟨ix.i0, ix.i1, ix.i2, 0, 0⟩
 
-def BigInt3.toUnreducedBigInt5  {F : Type} [field F]
-    (x : BigInt3 F) : UnreducedBigInt5 F := ⟨x.d0, x.d1, x.d2, 0, 0⟩
+def BigInt3.toUnreducedBigInt5  {F : Type} [field F] [decidable_eq F] [prelude_hyps F] {mem : F → F}
+    (x : BigInt3 mem) : UnreducedBigInt5 mem := ⟨x.d0, x.d1, x.d2, 0, 0⟩
 
-theorem bigint3.to_bigint5_to_Unreduced_BigInt5 (ix : bigint3) :
-  (ix.to_bigint5.toUnreducedBigInt5 : UnreducedBigInt5 F) = ix.toBigInt3.toUnreducedBigInt5 :=
+theorem bigint3.to_bigint5_to_Unreduced_BigInt5 {mem : F → F} (ix : bigint3) :
+  (ix.to_bigint5.toUnreducedBigInt5 : UnreducedBigInt5 mem) =
+    BigInt3.toUnreducedBigInt5 ix.toBigInt3 :=
 begin
   simp [bigint5.toUnreducedBigInt5, bigint3.to_bigint5, bigint3.toBigInt3,
     BigInt3.toUnreducedBigInt5]
@@ -359,10 +388,10 @@ end
 
 namespace UnreducedBigInt5
 
-def add (x y : UnreducedBigInt5 F) : UnreducedBigInt5 F :=
+def add {mem : F → F} (x y : UnreducedBigInt5 mem) : UnreducedBigInt5 mem :=
 { d0 := x.d0 + y.d0, d1 := x.d1 + y.d1, d2 := x.d2 + y.d2, d3 := x.d3 + y.d3, d4 := x.d4 + y.d4 }
 
-def sub (x y : UnreducedBigInt5 F) : UnreducedBigInt5 F :=
+def sub {mem : F → F} (x y : UnreducedBigInt5 mem) : UnreducedBigInt5 mem :=
 { d0 := x.d0 - y.d0, d1 := x.d1 - y.d1, d2 := x.d2 - y.d2, d3 := x.d3 - y.d3, d4 := x.d4 - y.d4 }
 
 end UnreducedBigInt5
@@ -375,8 +404,8 @@ def val (x : bigint5) : int := x.i4 * ↑BASE^4 + x.i3 * ↑BASE^3 + x.i2 * ↑B
 def add (x y : bigint5) : bigint5 :=
 { i0 := x.i0 + y.i0, i1 := x.i1 + y.i1, i2 := x.i2 + y.i2, i3 := x.i3 + y.i3, i4 := x.i4 + y.i4 }
 
-theorem toUnreducedBigInt5_add (x y : bigint5) :
-    ((x.add y).toUnreducedBigInt5 : UnreducedBigInt5 F) =
+theorem toUnreducedBigInt5_add {mem : F → F} (x y : bigint5) :
+    ((x.add y).toUnreducedBigInt5 : UnreducedBigInt5 mem) =
   UnreducedBigInt5.add (x.toUnreducedBigInt5) (y.toUnreducedBigInt5) :=
 by simp [UnreducedBigInt5.add, toUnreducedBigInt5, bigint5.add]
 
@@ -386,8 +415,8 @@ by { simp [val, add], ring }
 def sub (x y : bigint5) : bigint5 :=
 { i0 := x.i0 - y.i0, i1 := x.i1 - y.i1, i2 := x.i2 - y.i2, i3 := x.i3 - y.i3, i4 := x.i4 - y.i4 }
 
-theorem toUnreducedBigInt5_sub (x y : bigint5) :
-    ((x.sub y).toUnreducedBigInt5 : UnreducedBigInt5 F) =
+theorem toUnreducedBigInt5_sub {mem : F → F} (x y : bigint5) :
+    ((x.sub y).toUnreducedBigInt5 : UnreducedBigInt5 mem) =
   UnreducedBigInt5.sub (x.toUnreducedBigInt5) (y.toUnreducedBigInt5) :=
 by simp [UnreducedBigInt5.sub, toUnreducedBigInt5, bigint5.sub]
 
@@ -436,8 +465,8 @@ theorem bounded_cmul' {x : bigint5} {c b : int} (h : 0 ≤ c) (bddx : x.bounded 
   (x.cmul c).bounded (c * b) :=
 by { convert bounded_cmul bddx, rw abs_of_nonneg h }
 
-theorem toUnreducedBigInt5_eq_of_sub_bounded {a b : bigint5}
-    (heq : (a.toUnreducedBigInt5 : UnreducedBigInt5 F) = b.toUnreducedBigInt5)
+theorem toUnreducedBigInt5_eq_of_sub_bounded {mem : F → F} {a b : bigint5}
+    (heq : (a.toUnreducedBigInt5 : UnreducedBigInt5 mem) = b.toUnreducedBigInt5)
     (bdd : (b.sub a).bounded (PRIME - 1)) :
   a = b :=
 begin
@@ -511,7 +540,7 @@ end
 /- bigint_mul autogenerated specification -/
 
 -- Do not change this definition.
-def auto_spec_bigint_mul (mem : F → F) (κ : ℕ) (x y : BigInt3 F) (ρ_res : UnreducedBigInt5 F) : Prop :=
+def auto_spec_bigint_mul (mem : F → F) (κ : ℕ) (x y : BigInt3 mem) (ρ_res : UnreducedBigInt5 mem) : Prop :=
   14 ≤ κ ∧
   ρ_res = {
     d0 := x.d0 * y.d0,
@@ -522,8 +551,8 @@ def auto_spec_bigint_mul (mem : F → F) (κ : ℕ) (x y : BigInt3 F) (ρ_res : 
   }
 
 -- You may change anything in this definition except the name and arguments.
-def spec_bigint_mul (mem : F → F) (κ : ℕ) (x y : BigInt3 F) (ρ_res : UnreducedBigInt5 F) : Prop :=
-  ρ_res = x.UnreducedBigInt5_mul y
+def spec_bigint_mul (mem : F → F) (κ : ℕ) (x y : BigInt3 mem) (ρ_res : UnreducedBigInt5 mem) : Prop :=
+  ρ_res = BigInt3.UnreducedBigInt5_mul x y
 
 /- bigint_mul soundness theorem -/
 
@@ -531,7 +560,7 @@ def spec_bigint_mul (mem : F → F) (κ : ℕ) (x y : BigInt3 F) (ρ_res : Unred
 theorem sound_bigint_mul
     {mem : F → F}
     (κ : ℕ)
-    (x y : BigInt3 F) (ρ_res : UnreducedBigInt5 F)
+    (x y : BigInt3 mem) (ρ_res : UnreducedBigInt5 mem)
     (h_auto : auto_spec_bigint_mul mem κ x y ρ_res) :
   spec_bigint_mul mem κ x y ρ_res :=
 begin
@@ -545,10 +574,10 @@ end
 /- nondet_bigint3 autogenerated specification -/
 
 -- Do not change this definition.
-def auto_spec_nondet_bigint3 (mem : F → F) (κ : ℕ) (range_check_ptr ρ_range_check_ptr : F) (ρ_res : BigInt3 F) : Prop :=
-  ∃ res : BigInt3 F,
+def auto_spec_nondet_bigint3 (mem : F → F) (κ : ℕ) (range_check_ptr ρ_range_check_ptr : F) (ρ_res : BigInt3 mem) : Prop :=
+  ∃ res : BigInt3 mem,
   ∃ MAX_SUM : F, MAX_SUM = 232113757366008801543585789 ∧
-  mem (range_check_ptr) = MAX_SUM - (res.d0 + res.d1 + res.d2) ∧
+  mem range_check_ptr = MAX_SUM - (res.d0 + res.d1 + res.d2) ∧
   is_range_checked (rc_bound F) (MAX_SUM - (res.d0 + res.d1 + res.d2)) ∧
   ∃ range_check_ptr₁ : F, range_check_ptr₁ = range_check_ptr + 4 ∧
   mem (range_check_ptr₁ - 3) = res.d0 ∧
@@ -562,7 +591,7 @@ def auto_spec_nondet_bigint3 (mem : F → F) (κ : ℕ) (range_check_ptr ρ_rang
   ρ_res = res
 
 -- You may change anything in this definition except the name and arguments.
-def spec_nondet_bigint3 (mem : F → F) (κ : ℕ) (range_check_ptr ρ_range_check_ptr : F) (ρ_res : BigInt3 F) : Prop :=
+def spec_nondet_bigint3 (mem : F → F) (κ : ℕ) (range_check_ptr ρ_range_check_ptr : F) (ρ_res : BigInt3 mem) : Prop :=
   ∃ nd0 nd1 nd2 slack : ℕ,
     nd0 < rc_bound F ∧
     nd1 < rc_bound F ∧
@@ -571,7 +600,7 @@ def spec_nondet_bigint3 (mem : F → F) (κ : ℕ) (range_check_ptr ρ_range_che
     ρ_res = bigint3.toBigInt3 { i0 := nd0, i1 := nd1, i2 := nd2 } ∧
     nd0 + nd1 + nd2 + slack = 3 * (BASE - 1)
 
-theorem nondet_bigint3_corr {mem : F → F} {k : ℕ} {range_check_ptr : F} {ret0 : F} {x : BigInt3 F}
+theorem nondet_bigint3_corr {mem : F → F} {k : ℕ} {range_check_ptr : F} {ret0 : F} {x : BigInt3 mem}
     (h : spec_nondet_bigint3 mem k range_check_ptr ret0 x) :
   ∃ ix : bigint3, x = ix.toBigInt3 ∧ ix.bounded (3 * (BASE - 1)) :=
 begin
@@ -594,7 +623,7 @@ end
 theorem sound_nondet_bigint3
     {mem : F → F}
     (κ : ℕ)
-    (range_check_ptr ρ_range_check_ptr : F) (ρ_res : BigInt3 F)
+    (range_check_ptr ρ_range_check_ptr : F) (ρ_res : BigInt3 mem)
     (h_auto : auto_spec_nondet_bigint3 mem κ range_check_ptr ρ_range_check_ptr ρ_res) :
   spec_nondet_bigint3 mem κ range_check_ptr ρ_range_check_ptr ρ_res :=
 begin

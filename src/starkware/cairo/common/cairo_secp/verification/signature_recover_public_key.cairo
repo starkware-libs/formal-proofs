@@ -1,5 +1,5 @@
-from starkware.cairo.common.cairo_secp.bigint import BigInt3
-from starkware.cairo.common.cairo_secp.ec import EcPoint
+from starkware.cairo.common.cairo_secp.bigint3 import BigInt3
+from starkware.cairo.common.cairo_secp.ec_point import EcPoint
 from starkware.cairo.common.cairo_secp.signature import recover_public_key
 
 func call_recover_public_key{range_check_ptr}(

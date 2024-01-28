@@ -10,9 +10,11 @@ import .signature_recover_public_key_recover_public_key_soundness
 open tactic
 
 open starkware.cairo.common.cairo_secp.verification.signature_recover_public_key
+open starkware.cairo.common.cairo_secp.bigint3
+open starkware.cairo.common.cairo_secp.ec_point
 open starkware.cairo.common.cairo_secp.signature
-open starkware.cairo.common.math
 open starkware.cairo.common.cairo_secp.field
+open starkware.cairo.common.math
 open starkware.cairo.common.cairo_secp.ec
 open starkware.cairo.common.cairo_secp.bigint
 
@@ -24,7 +26,7 @@ variable  σ : register_state F
 
 theorem auto_sound_call_recover_public_key
     -- arguments
-    (range_check_ptr : F) (msg_hash r s : BigInt3 F) (v : F)
+    (range_check_ptr : F) (msg_hash r s : BigInt3 mem) (v : F)
     -- code is in memory at σ.pc
     (h_mem : mem_at mem code_call_recover_public_key σ.pc)
     -- all dependencies are in memory
@@ -60,7 +62,7 @@ theorem auto_sound_call_recover_public_key
     -- conclusion
   : ensures_ret mem σ (λ κ τ,
       ∃ μ ≤ κ, rc_ensures mem (rc_bound F) μ (mem (σ.fp - 13)) (mem $ τ.ap - 7)
-        (spec_call_recover_public_key mem κ range_check_ptr msg_hash r s v (mem (τ.ap - 7)) (cast_EcPoint mem (τ.ap - 6)))) :=
+        (spec_call_recover_public_key mem κ range_check_ptr msg_hash r s v (mem (τ.ap - 7)) (cast_EcPoint  mem (τ.ap - 6)))) :=
 begin
   apply ensures_of_ensuresb, intro νbound,
   have h_mem_rec := h_mem,
@@ -127,10 +129,10 @@ begin
   intros κ_call13 ap13 h_call13,
   rcases h_call13 with ⟨rc_m13, rc_mle13, hl_range_check_ptr₁, h_call13⟩,
   step_ret hpc13,
-  generalize' hr_rev_range_check_ptr₁: mem (ap13 - 7) = range_check_ptr₁,
-  have htv_range_check_ptr₁ := hr_rev_range_check_ptr₁.symm, clear hr_rev_range_check_ptr₁,
+  mkdef htv_range_check_ptr₁ : range_check_ptr₁ = (mem (ap13 - 7)),
+  simp only [←htv_range_check_ptr₁] at h_call13,
   try { simp only [arg0 ,arg1 ,arg2 ,arg3 ,arg4 ,arg5 ,arg6 ,arg7 ,arg8 ,arg9 ,arg10] at hl_range_check_ptr₁ },
-  rw [←htv_range_check_ptr₁, ←hin_range_check_ptr] at hl_range_check_ptr₁,
+  try { rw [←htv_range_check_ptr₁] at hl_range_check_ptr₁ }, try { rw [←hin_range_check_ptr] at hl_range_check_ptr₁ },
   try { simp only [arg0 ,arg1 ,arg2 ,arg3 ,arg4 ,arg5 ,arg6 ,arg7 ,arg8 ,arg9 ,arg10] at h_call13 },
   rw [hin_range_check_ptr] at h_call13,
   clear arg0 arg1 arg2 arg3 arg4 arg5 arg6 arg7 arg8 arg9 arg10,
@@ -140,9 +142,9 @@ begin
   use_only (rc_m13+0+0), split,
   linarith [rc_mle13],
   split,
-  { arith_simps,
-    rw [←htv_range_check_ptr₁, hl_range_check_ptr₁, hin_range_check_ptr],
-    try { arith_simps, refl <|> norm_cast }, try { refl } },
+  { try { norm_num1 }, arith_simps,
+    try { rw [←htv_range_check_ptr₁] }, try { rw [hl_range_check_ptr₁] }, try { rw [hin_range_check_ptr] },
+    try { ring_nf }, try { arith_simps, refl <|> norm_cast }, try { refl } },
   intro rc_h_range_check_ptr, repeat { rw [add_assoc] at rc_h_range_check_ptr },
   have rc_h_range_check_ptr' := range_checked_add_right rc_h_range_check_ptr,
   -- Final Proof
@@ -156,7 +158,7 @@ begin
   have rc_h_range_check_ptr₁ := range_checked_offset' rc_h_range_check_ptr,
   have rc_h_range_check_ptr₁' := range_checked_add_right rc_h_range_check_ptr₁, try { norm_cast at rc_h_range_check_ptr₁' },
   have spec13 := h_call13 rc_h_range_check_ptr',
-  rw [←hin_range_check_ptr] at spec13,
+    try { rw [←hin_range_check_ptr] at spec13 },
   try { dsimp at spec13, arith_simps at spec13 },
   use_only [spec13],
   try { linarith },

@@ -26,6 +26,8 @@ variables {F : Type} [field F] [decidable_eq F] [prelude_hyps F]
 @[reducible] def N1 := 77371252455330678278691517
 @[reducible] def N2 := 19342813113834066795298815
 @[reducible] def BETA := 7
+@[reducible] def SECP_PRIME_HIGH := 340282366920938463463374607431768211455
+@[reducible] def SECP_PRIME_LOW := 340282366920938463463374607427473243183
 
 -- End of main scope definitions.
 

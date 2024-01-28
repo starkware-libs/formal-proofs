@@ -9,8 +9,8 @@ import ..signature_recover_public_key_spec
 open tactic
 
 open starkware.cairo.common.cairo_secp.signature
-open starkware.cairo.common.cairo_secp.bigint
-open starkware.cairo.common.cairo_secp.ec
+open starkware.cairo.common.cairo_secp.bigint3
+open starkware.cairo.common.cairo_secp.ec_point
 
 variables {F : Type} [field F] [decidable_eq F] [prelude_hyps F]
 variable  mem : F → F
@@ -23,7 +23,7 @@ theorem auto_sound_get_generator_point
     (h_mem : mem_at mem code_get_generator_point σ.pc)
     -- input arguments on the stack
     -- conclusion
-  : ensures_ret mem σ (λ κ τ, τ.ap = σ.ap + 6 ∧ spec_get_generator_point mem κ (cast_EcPoint mem (τ.ap - 6))) :=
+  : ensures_ret mem σ (λ κ τ, τ.ap = σ.ap + 6 ∧ spec_get_generator_point mem κ (cast_EcPoint  mem (τ.ap - 6))) :=
 begin
   apply ensures_of_ensuresb, intro νbound,
   have h_mem_rec := h_mem,
@@ -46,7 +46,7 @@ begin
   -- prove the auto generated assertion
   dsimp [auto_spec_get_generator_point],
   try { norm_num1 }, try { arith_simps },
-  try { split, linarith },
+  try { split, trivial <|> linarith },
   try { ensures_simps; try { simp only [add_neg_eq_sub] }, },
   try { dsimp [cast_EcPoint, cast_BigInt3] },
   try { arith_simps }, try { simp only [hret0, hret1, hret2, hret3, hret4, hret5] },

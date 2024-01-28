@@ -6,6 +6,15 @@ import tactic.omega
 open_locale big_operators
 
 /-
+some generic simplifier rules
+-/
+
+lemma add_neg_eq_sub {G : Type*} [add_group G] (a b : G) : a + -b = a - b := by rw sub_eq_add_neg
+
+lemma sub_add_eq_add_neg_add {G : Type*} [add_group G] (a b c : G) :
+  a - b + c = a + (-b + c) := by rw [sub_eq_add_neg, add_assoc]
+
+/-
 bool
 -/
 
@@ -57,6 +66,14 @@ def fn_extends {α β : Type*} (f : α → β) (f' : α → option β) : Prop :=
 theorem eq_of_fn_extends {α β : Type*} {f : α → β} {f' : α → option β}
   (h : fn_extends f f') {a : α} {b : β} (h' : f' a = some b) : f a = b :=
 by { symmetry, have := h a, rwa h' at this }
+
+lemma agrees_iff_of_eq_some {T : Type*} {a : option T} {b : T} (h : a = some b) (c : T) :
+  a.agrees c ↔ c = b :=
+by { rw h, simp [option.agrees], split; apply eq.symm }
+
+lemma some_if {T : Type*} (P : Prop) [decidable P] (a b : T) :
+  option.some (if P then a else b) = if P then option.some a else option.some b :=
+by { by_cases h : P, { simp [if_pos h] }, simp [if_neg h] }
 
 end option
 
@@ -530,3 +547,14 @@ begin
 end
 
 end
+
+namespace tactic
+setup_tactic_parser
+
+def loc_target : loc := loc.ns [none]
+
+meta def mk_simp_arg_list : list pexpr → list simp_arg_type
+| []        := []
+| (p :: ps) := simp_arg_type.expr p :: mk_simp_arg_list ps
+
+end tactic

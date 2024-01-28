@@ -3,8 +3,13 @@ Cairo semantics in Lean
 
 This folder contains a Lean formalization of the semantics of Cairo.
 
+- The file [instructions.lean](instructions.lean) defines the Cairo machine code.
+
 - The file [cpu.lean](cpu.lean) defines the CPU execution
   semantics.
+
+- The file [assembly.lean](assembly.lean) models Cairo's assembly language and
+  a translation to machine code.
 
 - The folder [air_encoding](air_encoding) contains a formal proof of the
   correctness of an algebraic encoding of this execution model that is used by STARK proofs.

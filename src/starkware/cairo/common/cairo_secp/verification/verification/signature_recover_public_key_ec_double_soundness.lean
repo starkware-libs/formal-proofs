@@ -11,7 +11,9 @@ open tactic
 
 open starkware.cairo.common.cairo_secp.ec
 open starkware.cairo.common.cairo_secp.bigint
+open starkware.cairo.common.cairo_secp.bigint3
 open starkware.cairo.common.cairo_secp.field
+open starkware.cairo.common.cairo_secp.ec_point
 
 variables {F : Type} [field F] [decidable_eq F] [prelude_hyps F]
 variable  mem : F → F
@@ -23,7 +25,7 @@ theorem auto_sound_ec_double_block5
     -- An independent ap variable.
     (ap : F)
     -- arguments
-    (range_check_ptr : F) (point : EcPoint F)
+    (range_check_ptr : F) (point : EcPoint mem)
     -- code is in memory at σ.pc
     (h_mem : mem_at mem code_ec_double σ.pc)
     -- all dependencies are in memory
@@ -41,7 +43,7 @@ theorem auto_sound_ec_double_block5
     {pc := σ.pc + 14, ap := ap, fp := σ.fp}
     (λ κ τ,
       ∃ μ ≤ κ, rc_ensures mem (rc_bound F) μ (mem (σ.fp - 9)) (mem $ τ.ap - 7)
-        (auto_spec_ec_double_block5 mem κ range_check_ptr point (mem (τ.ap - 7)) (cast_EcPoint mem (τ.ap - 6)))) :=
+        (auto_spec_ec_double_block5 mem κ range_check_ptr point (mem (τ.ap - 7)) (cast_EcPoint  mem (τ.ap - 6)))) :=
 begin
   have h_mem_rec := h_mem,
   unpack_memory code_ec_double at h_mem with ⟨hpc0, hpc1, hpc2, hpc3, hpc4, hpc5, hpc6, hpc7, hpc8, hpc9, hpc10, hpc11, hpc12, hpc13, hpc14, hpc15, hpc16, hpc17, hpc18, hpc19, hpc20, hpc21, hpc22, hpc23, hpc24, hpc25, hpc26, hpc27, hpc28, hpc29, hpc30, hpc31, hpc32, hpc33, hpc34, hpc35, hpc36, hpc37, hpc38, hpc39, hpc40, hpc41, hpc42, hpc43, hpc44, hpc45, hpc46, hpc47, hpc48, hpc49, hpc50, hpc51, hpc52, hpc53, hpc54, hpc55, hpc56, hpc57, hpc58, hpc59, hpc60, hpc61, hpc62, hpc63, hpc64, hpc65, hpc66, hpc67, hpc68, hpc69, hpc70, hpc71, hpc72⟩,
@@ -71,13 +73,12 @@ begin
   intros κ_call23 ap23 h_call23,
   rcases h_call23 with ⟨h_call23_ap_offset, h_call23⟩,
   rcases h_call23 with ⟨rc_m23, rc_mle23, hl_range_check_ptr₁, h_call23⟩,
-  generalize' hr_rev_range_check_ptr₁: mem (ap23 - 4) = range_check_ptr₁,
-  have htv_range_check_ptr₁ := hr_rev_range_check_ptr₁.symm, clear hr_rev_range_check_ptr₁,
-  generalize' hr_rev_slope: cast_BigInt3 mem (ap23 - 3) = slope,
-  simp only [hr_rev_slope] at h_call23,
-  have htv_slope := hr_rev_slope.symm, clear hr_rev_slope,
+  mkdef htv_range_check_ptr₁ : range_check_ptr₁ = (mem (ap23 - 4)),
+  simp only [←htv_range_check_ptr₁] at h_call23,
+  mkdef htv_slope : slope = (cast_BigInt3 mem (ap23 - 3)),
+  simp only [←htv_slope] at h_call23,
   try { simp only [arg0 ,arg1 ,arg2 ,arg3 ,arg4 ,arg5 ,arg6] at hl_range_check_ptr₁ },
-  rw [←htv_range_check_ptr₁, ←hin_range_check_ptr] at hl_range_check_ptr₁,
+  try { rw [←htv_range_check_ptr₁] at hl_range_check_ptr₁ }, try { rw [←hin_range_check_ptr] at hl_range_check_ptr₁ },
   try { simp only [arg0 ,arg1 ,arg2 ,arg3 ,arg4 ,arg5 ,arg6] at h_call23 },
   rw [hin_range_check_ptr] at h_call23,
   clear arg0 arg1 arg2 arg3 arg4 arg5 arg6,
@@ -91,9 +92,8 @@ begin
       try { arith_simps; try { split }; triv <|> refl <|> simp <|> abel; try { norm_num } },}, },
   intros κ_call25 ap25 h_call25,
   rcases h_call25 with ⟨h_call25_ap_offset, h_call25⟩,
-  generalize' hr_rev_slope_sqr: cast_UnreducedBigInt3 mem (ap25 - 3) = slope_sqr,
-  simp only [hr_rev_slope_sqr] at h_call25,
-  have htv_slope_sqr := hr_rev_slope_sqr.symm, clear hr_rev_slope_sqr,
+  mkdef htv_slope_sqr : slope_sqr = (cast_UnreducedBigInt3 mem (ap25 - 3)),
+  simp only [←htv_slope_sqr] at h_call25,
   clear ,
   -- function call
   step_assert_eq hpc25 with arg0,
@@ -107,14 +107,13 @@ begin
   intros κ_call28 ap28 h_call28,
   rcases h_call28 with ⟨h_call28_ap_offset, h_call28⟩,
   rcases h_call28 with ⟨rc_m28, rc_mle28, hl_range_check_ptr₂, h_call28⟩,
-  generalize' hr_rev_range_check_ptr₂: mem (ap28 - 4) = range_check_ptr₂,
-  have htv_range_check_ptr₂ := hr_rev_range_check_ptr₂.symm, clear hr_rev_range_check_ptr₂,
-  generalize' hr_rev_new_x: cast_BigInt3 mem (ap28 - 3) = new_x,
-  simp only [hr_rev_new_x] at h_call28,
-  have htv_new_x := hr_rev_new_x.symm, clear hr_rev_new_x,
+  mkdef htv_range_check_ptr₂ : range_check_ptr₂ = (mem (ap28 - 4)),
+  simp only [←htv_range_check_ptr₂] at h_call28,
+  mkdef htv_new_x : new_x = (cast_BigInt3 mem (ap28 - 3)),
+  simp only [←htv_new_x] at h_call28,
   try { simp only [arg0] at hl_range_check_ptr₂ },
   try { rw [h_call25_ap_offset] at hl_range_check_ptr₂ }, try { arith_simps at hl_range_check_ptr₂ },
-  rw [←htv_range_check_ptr₂, ←htv_range_check_ptr₁] at hl_range_check_ptr₂,
+  try { rw [←htv_range_check_ptr₂] at hl_range_check_ptr₂ }, try { rw [←htv_range_check_ptr₁] at hl_range_check_ptr₂ },
   try { simp only [arg0] at h_call28 },
   try { rw [h_call25_ap_offset] at h_call28 }, try { arith_simps at h_call28 },
   rw [←htv_range_check_ptr₁, hl_range_check_ptr₁, hin_range_check_ptr] at h_call28,
@@ -131,13 +130,12 @@ begin
   intros κ_call31 ap31 h_call31,
   rcases h_call31 with ⟨h_call31_ap_offset, h_call31⟩,
   rcases h_call31 with ⟨rc_m31, rc_mle31, hl_range_check_ptr₃, h_call31⟩,
-  generalize' hr_rev_range_check_ptr₃: mem (ap31 - 4) = range_check_ptr₃,
-  have htv_range_check_ptr₃ := hr_rev_range_check_ptr₃.symm, clear hr_rev_range_check_ptr₃,
-  generalize' hr_rev_new_y: cast_BigInt3 mem (ap31 - 3) = new_y,
-  simp only [hr_rev_new_y] at h_call31,
-  have htv_new_y := hr_rev_new_y.symm, clear hr_rev_new_y,
+  mkdef htv_range_check_ptr₃ : range_check_ptr₃ = (mem (ap31 - 4)),
+  simp only [←htv_range_check_ptr₃] at h_call31,
+  mkdef htv_new_y : new_y = (cast_BigInt3 mem (ap31 - 3)),
+  simp only [←htv_new_y] at h_call31,
   try { simp only [arg0] at hl_range_check_ptr₃ },
-  rw [←htv_range_check_ptr₃, ←htv_range_check_ptr₂] at hl_range_check_ptr₃,
+  try { rw [←htv_range_check_ptr₃] at hl_range_check_ptr₃ }, try { rw [←htv_range_check_ptr₂] at hl_range_check_ptr₃ },
   try { simp only [arg0] at h_call31 },
   rw [←htv_range_check_ptr₂, hl_range_check_ptr₂, hl_range_check_ptr₁, hin_range_check_ptr] at h_call31,
   clear arg0,
@@ -175,10 +173,10 @@ begin
   intros κ_call49 ap49 h_call49,
   rcases h_call49 with ⟨h_call49_ap_offset, h_call49⟩,
   rcases h_call49 with ⟨rc_m49, rc_mle49, hl_range_check_ptr₄, h_call49⟩,
-  generalize' hr_rev_range_check_ptr₄: mem (ap49 - 1) = range_check_ptr₄,
-  have htv_range_check_ptr₄ := hr_rev_range_check_ptr₄.symm, clear hr_rev_range_check_ptr₄,
+  mkdef htv_range_check_ptr₄ : range_check_ptr₄ = (mem (ap49 - 1)),
+  simp only [←htv_range_check_ptr₄] at h_call49,
   try { simp only [arg0 ,arg1 ,arg2 ,arg3 ,arg4 ,arg5 ,arg6 ,arg7 ,arg8 ,arg9 ,arg10 ,arg11 ,arg12] at hl_range_check_ptr₄ },
-  rw [←htv_range_check_ptr₄, ←htv_range_check_ptr₃] at hl_range_check_ptr₄,
+  try { rw [←htv_range_check_ptr₄] at hl_range_check_ptr₄ }, try { rw [←htv_range_check_ptr₃] at hl_range_check_ptr₄ },
   try { simp only [arg0 ,arg1 ,arg2 ,arg3 ,arg4 ,arg5 ,arg6 ,arg7 ,arg8 ,arg9 ,arg10 ,arg11 ,arg12] at h_call49 },
   rw [←htv_range_check_ptr₃, hl_range_check_ptr₃, hl_range_check_ptr₂, hl_range_check_ptr₁, hin_range_check_ptr] at h_call49,
   clear arg0 arg1 arg2 arg3 arg4 arg5 arg6 arg7 arg8 arg9 arg10 arg11 arg12,
@@ -209,9 +207,8 @@ begin
       try { arith_simps; try { split }; triv <|> refl <|> simp <|> abel; try { norm_num } },}, },
   intros κ_call57 ap57 h_call57,
   rcases h_call57 with ⟨h_call57_ap_offset, h_call57⟩,
-  generalize' hr_rev_x_diff_slope: cast_UnreducedBigInt3 mem (ap57 - 3) = x_diff_slope,
-  simp only [hr_rev_x_diff_slope] at h_call57,
-  have htv_x_diff_slope := hr_rev_x_diff_slope.symm, clear hr_rev_x_diff_slope,
+  mkdef htv_x_diff_slope : x_diff_slope = (cast_UnreducedBigInt3 mem (ap57 - 3)),
+  simp only [←htv_x_diff_slope] at h_call57,
   clear arg0 arg1 arg2 arg3 arg4 arg5,
   -- function call
   step_assert_eq hpc57 with arg0,
@@ -241,11 +238,11 @@ begin
   intros κ_call66 ap66 h_call66,
   rcases h_call66 with ⟨h_call66_ap_offset, h_call66⟩,
   rcases h_call66 with ⟨rc_m66, rc_mle66, hl_range_check_ptr₅, h_call66⟩,
-  generalize' hr_rev_range_check_ptr₅: mem (ap66 - 1) = range_check_ptr₅,
-  have htv_range_check_ptr₅ := hr_rev_range_check_ptr₅.symm, clear hr_rev_range_check_ptr₅,
+  mkdef htv_range_check_ptr₅ : range_check_ptr₅ = (mem (ap66 - 1)),
+  simp only [←htv_range_check_ptr₅] at h_call66,
   try { simp only [arg0 ,arg1 ,arg2 ,arg3 ,arg4 ,arg5 ,arg6] at hl_range_check_ptr₅ },
   try { rw [h_call57_ap_offset] at hl_range_check_ptr₅ }, try { arith_simps at hl_range_check_ptr₅ },
-  rw [←htv_range_check_ptr₅, ←htv_range_check_ptr₄] at hl_range_check_ptr₅,
+  try { rw [←htv_range_check_ptr₅] at hl_range_check_ptr₅ }, try { rw [←htv_range_check_ptr₄] at hl_range_check_ptr₅ },
   try { simp only [arg0 ,arg1 ,arg2 ,arg3 ,arg4 ,arg5 ,arg6] at h_call66 },
   try { rw [h_call57_ap_offset] at h_call66 }, try { arith_simps at h_call66 },
   rw [←htv_range_check_ptr₄, hl_range_check_ptr₄, hl_range_check_ptr₃, hl_range_check_ptr₂, hl_range_check_ptr₁, hin_range_check_ptr] at h_call66,
@@ -264,9 +261,9 @@ begin
   use_only (rc_m23+rc_m28+rc_m31+rc_m49+rc_m66+0+0), split,
   linarith [rc_mle23, rc_mle28, rc_mle31, rc_mle49, rc_mle66],
   split,
-  { arith_simps, try { simp only [hret0 ,hret1 ,hret2 ,hret3 ,hret4 ,hret5] },
-    rw [←htv_range_check_ptr₅, hl_range_check_ptr₅, hl_range_check_ptr₄, hl_range_check_ptr₃, hl_range_check_ptr₂, hl_range_check_ptr₁, hin_range_check_ptr],
-    try { arith_simps, refl <|> norm_cast }, try { refl } },
+  { try { norm_num1 }, arith_simps, try { simp only [hret0 ,hret1 ,hret2 ,hret3 ,hret4 ,hret5] },
+    try { rw [←htv_range_check_ptr₅] }, try { rw [hl_range_check_ptr₅] }, try { rw [←htv_range_check_ptr₄] }, try { rw [hl_range_check_ptr₄] }, try { rw [←htv_range_check_ptr₃] }, try { rw [hl_range_check_ptr₃] }, try { rw [←htv_range_check_ptr₂] }, try { rw [hl_range_check_ptr₂] }, try { rw [←htv_range_check_ptr₁] }, try { rw [hl_range_check_ptr₁] }, try { rw [hin_range_check_ptr] },
+    try { ring_nf }, try { arith_simps, refl <|> norm_cast }, try { refl } },
   intro rc_h_range_check_ptr, repeat { rw [add_assoc] at rc_h_range_check_ptr },
   have rc_h_range_check_ptr' := range_checked_add_right rc_h_range_check_ptr,
   -- Final Proof
@@ -278,7 +275,7 @@ begin
   have rc_h_range_check_ptr₁ := range_checked_offset' rc_h_range_check_ptr,
   have rc_h_range_check_ptr₁' := range_checked_add_right rc_h_range_check_ptr₁, try { norm_cast at rc_h_range_check_ptr₁' },
   have spec23 := h_call23 rc_h_range_check_ptr',
-  rw [←hin_range_check_ptr, ←htv_range_check_ptr₁] at spec23,
+    try { rw [←hin_range_check_ptr] at spec23 }, try { rw [←htv_range_check_ptr₁] at spec23 },
   try { dsimp at spec23, arith_simps at spec23 },
   use_only [spec23],
   use_only [κ_call25],
@@ -291,7 +288,7 @@ begin
   have rc_h_range_check_ptr₂ := range_checked_offset' rc_h_range_check_ptr₁,
   have rc_h_range_check_ptr₂' := range_checked_add_right rc_h_range_check_ptr₂, try { norm_cast at rc_h_range_check_ptr₂' },
   have spec28 := h_call28 rc_h_range_check_ptr₁',
-  rw [←hin_range_check_ptr, ←hl_range_check_ptr₁, ←htv_range_check_ptr₂] at spec28,
+    try { rw [←hin_range_check_ptr] at spec28 }, try { rw [←hl_range_check_ptr₁] at spec28 }, try { rw [←htv_range_check_ptr₂] at spec28 },
   try { dsimp at spec28, arith_simps at spec28 },
   use_only [spec28],
   use_only [κ_call31],
@@ -300,7 +297,7 @@ begin
   have rc_h_range_check_ptr₃ := range_checked_offset' rc_h_range_check_ptr₂,
   have rc_h_range_check_ptr₃' := range_checked_add_right rc_h_range_check_ptr₃, try { norm_cast at rc_h_range_check_ptr₃' },
   have spec31 := h_call31 rc_h_range_check_ptr₂',
-  rw [←hin_range_check_ptr, ←hl_range_check_ptr₁, ←hl_range_check_ptr₂, ←htv_range_check_ptr₃] at spec31,
+    try { rw [←hin_range_check_ptr] at spec31 }, try { rw [←hl_range_check_ptr₁] at spec31 }, try { rw [←hl_range_check_ptr₂] at spec31 }, try { rw [←htv_range_check_ptr₃] at spec31 },
   try { dsimp at spec31, arith_simps at spec31 },
   use_only [spec31],
   use_only [κ_call49],
@@ -308,7 +305,7 @@ begin
   have rc_h_range_check_ptr₄ := range_checked_offset' rc_h_range_check_ptr₃,
   have rc_h_range_check_ptr₄' := range_checked_add_right rc_h_range_check_ptr₄, try { norm_cast at rc_h_range_check_ptr₄' },
   have spec49 := h_call49 rc_h_range_check_ptr₃',
-  rw [←hin_range_check_ptr, ←hl_range_check_ptr₁, ←hl_range_check_ptr₂, ←hl_range_check_ptr₃, ←htv_range_check_ptr₄] at spec49,
+    try { rw [←hin_range_check_ptr] at spec49 }, try { rw [←hl_range_check_ptr₁] at spec49 }, try { rw [←hl_range_check_ptr₂] at spec49 }, try { rw [←hl_range_check_ptr₃] at spec49 }, try { rw [←htv_range_check_ptr₄] at spec49 },
   try { dsimp at spec49, arith_simps at spec49 },
   use_only [spec49],
   use_only [κ_call57],
@@ -320,10 +317,10 @@ begin
   have rc_h_range_check_ptr₅ := range_checked_offset' rc_h_range_check_ptr₄,
   have rc_h_range_check_ptr₅' := range_checked_add_right rc_h_range_check_ptr₅, try { norm_cast at rc_h_range_check_ptr₅' },
   have spec66 := h_call66 rc_h_range_check_ptr₄',
-  rw [←hin_range_check_ptr, ←hl_range_check_ptr₁, ←hl_range_check_ptr₂, ←hl_range_check_ptr₃, ←hl_range_check_ptr₄, ←htv_range_check_ptr₅] at spec66,
+    try { rw [←hin_range_check_ptr] at spec66 }, try { rw [←hl_range_check_ptr₁] at spec66 }, try { rw [←hl_range_check_ptr₂] at spec66 }, try { rw [←hl_range_check_ptr₃] at spec66 }, try { rw [←hl_range_check_ptr₄] at spec66 }, try { rw [←htv_range_check_ptr₅] at spec66 },
   try { dsimp at spec66, arith_simps at spec66 },
   use_only [spec66],
-  try { split, linarith },
+  try { split, trivial <|> linarith },
   try { ensures_simps; try { simp only [add_neg_eq_sub, hin_range_check_ptr, hin_point, htv_range_check_ptr₁, htv_slope, htv_slope_sqr, htv_range_check_ptr₂, htv_new_x, htv_range_check_ptr₃, htv_new_y, htv_range_check_ptr₄, htv_x_diff_slope, htv_range_check_ptr₅] }, },
   try { dsimp [cast_EcPoint, cast_BigInt3, cast_UnreducedBigInt3] },
   try { arith_simps }, try { simp only [hret0, hret1, hret2, hret3, hret4, hret5] },
@@ -333,7 +330,7 @@ end
 
 theorem auto_sound_ec_double
     -- arguments
-    (range_check_ptr : F) (point : EcPoint F)
+    (range_check_ptr : F) (point : EcPoint mem)
     -- code is in memory at σ.pc
     (h_mem : mem_at mem code_ec_double σ.pc)
     -- all dependencies are in memory
@@ -348,7 +345,7 @@ theorem auto_sound_ec_double
     -- conclusion
   : ensures_ret mem σ (λ κ τ,
       ∃ μ ≤ κ, rc_ensures mem (rc_bound F) μ (mem (σ.fp - 9)) (mem $ τ.ap - 7)
-        (spec_ec_double mem κ range_check_ptr point (mem (τ.ap - 7)) (cast_EcPoint mem (τ.ap - 6)))) :=
+        (spec_ec_double mem κ range_check_ptr point (mem (τ.ap - 7)) (cast_EcPoint  mem (τ.ap - 6)))) :=
 begin
   apply ensures_of_ensuresb, intro νbound,
   have h_mem_rec := h_mem,
@@ -404,8 +401,8 @@ begin
         use_only (0+0), split,
         linarith [],
         split,
-        { arith_simps, try { simp only [hret0 ,hret1 ,hret2 ,hret3 ,hret4 ,hret5 ,hret6] },
-          try { arith_simps, refl <|> norm_cast }, try { refl } },
+        { try { norm_num1 }, arith_simps, try { simp only [hret0 ,hret1 ,hret2 ,hret3 ,hret4 ,hret5 ,hret6] },
+          try { ring_nf }, try { arith_simps, refl <|> norm_cast }, try { refl } },
         intro rc_h_range_check_ptr, repeat { rw [add_assoc] at rc_h_range_check_ptr },
         have rc_h_range_check_ptr' := range_checked_add_right rc_h_range_check_ptr,
         -- Final Proof
@@ -421,7 +418,7 @@ begin
         use_only [a2],
         left,
         use_only [a4],
-        try { split, linarith },
+        try { split, trivial <|> linarith },
         try { ensures_simps; try { simp only [add_neg_eq_sub, hin_range_check_ptr, hin_point] }, },
         try { dsimp [cast_EcPoint, cast_BigInt3] },
         try { arith_simps }, try { simp only [hret0, hret1, hret2, hret3, hret4, hret5, hret6] },
@@ -447,8 +444,8 @@ begin
         use_only (rc_m_block5+0+0), split,
         linarith [rc_m_le_block5],
         split,
-        { arith_simps, try { simp only [hblk_range_check_ptr₁] },
-          try { arith_simps, refl <|> norm_cast }, try { refl } },
+        { try { norm_num1 }, arith_simps, try { simp only [hblk_range_check_ptr₁] },
+          try { ring_nf }, try { arith_simps, refl <|> norm_cast }, try { refl } },
         intro rc_h_range_check_ptr, repeat { rw [add_assoc] at rc_h_range_check_ptr },
         have rc_h_range_check_ptr' := range_checked_add_right rc_h_range_check_ptr,
         -- Final Proof
@@ -470,7 +467,7 @@ begin
         try { rw [←hin_range_check_ptr] at h_block5' },
         try { dsimp at h_block5, arith_simps at h_block5' },
         have h_block5 := h_block5',
-        use_only[κ_block5],
+        use_only [κ_block5],
         use [h_block5],
         try { linarith }
       }
@@ -495,8 +492,8 @@ begin
       use_only (rc_m_block5+0+0), split,
       linarith [rc_m_le_block5],
       split,
-      { arith_simps, try { simp only [hblk_range_check_ptr₁] },
-        try { arith_simps, refl <|> norm_cast }, try { refl } },
+      { try { norm_num1 }, arith_simps, try { simp only [hblk_range_check_ptr₁] },
+        try { ring_nf }, try { arith_simps, refl <|> norm_cast }, try { refl } },
       intro rc_h_range_check_ptr, repeat { rw [add_assoc] at rc_h_range_check_ptr },
       have rc_h_range_check_ptr' := range_checked_add_right rc_h_range_check_ptr,
       -- Final Proof
@@ -516,7 +513,7 @@ begin
       try { rw [←hin_range_check_ptr] at h_block5' },
       try { dsimp at h_block5, arith_simps at h_block5' },
       have h_block5 := h_block5',
-      use_only[κ_block5],
+      use_only [κ_block5],
       use [h_block5],
       try { linarith }
     }
@@ -541,8 +538,8 @@ begin
     use_only (rc_m_block5+0+0), split,
     linarith [rc_m_le_block5],
     split,
-    { arith_simps, try { simp only [hblk_range_check_ptr₁] },
-      try { arith_simps, refl <|> norm_cast }, try { refl } },
+    { try { norm_num1 }, arith_simps, try { simp only [hblk_range_check_ptr₁] },
+      try { ring_nf }, try { arith_simps, refl <|> norm_cast }, try { refl } },
     intro rc_h_range_check_ptr, repeat { rw [add_assoc] at rc_h_range_check_ptr },
     have rc_h_range_check_ptr' := range_checked_add_right rc_h_range_check_ptr,
     -- Final Proof
@@ -560,7 +557,7 @@ begin
     try { rw [←hin_range_check_ptr] at h_block5' },
     try { dsimp at h_block5, arith_simps at h_block5' },
     have h_block5 := h_block5',
-    use_only[κ_block5],
+    use_only [κ_block5],
     use [h_block5],
     try { linarith }
   }

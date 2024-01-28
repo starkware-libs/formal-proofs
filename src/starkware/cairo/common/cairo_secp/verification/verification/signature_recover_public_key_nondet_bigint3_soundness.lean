@@ -9,6 +9,7 @@ import ..signature_recover_public_key_spec
 open tactic
 
 open starkware.cairo.common.cairo_secp.bigint
+open starkware.cairo.common.cairo_secp.bigint3
 open starkware.cairo.common.cairo_secp.constants
 
 variables {F : Type} [field F] [decidable_eq F] [prelude_hyps F]
@@ -28,7 +29,7 @@ theorem auto_sound_nondet_bigint3
   : ensures_ret mem σ (λ κ τ,
       τ.ap = σ.ap + 8 ∧
       ∃ μ ≤ κ, rc_ensures mem (rc_bound F) μ (mem (σ.fp - 3)) (mem $ τ.ap - 4)
-        (spec_nondet_bigint3 mem κ range_check_ptr (mem (τ.ap - 4)) (cast_BigInt3 mem (τ.ap - 3)))) :=
+        (spec_nondet_bigint3 mem κ range_check_ptr (mem (τ.ap - 4)) (cast_BigInt3  mem (τ.ap - 3)))) :=
 begin
   apply ensures_of_ensuresb, intro νbound,
   have h_mem_rec := h_mem,
@@ -36,18 +37,17 @@ begin
   -- let (ap reference)
   apply of_register_state,
   intros regstate_res regstateeq_res,
-  generalize' hl_rev_res: cast_BigInt3 mem (regstate_res.ap + 5) = res,
-  have hl_res := hl_rev_res.symm,
+  mkdef  hl_res : res = cast_BigInt3 mem (regstate_res.ap + 5),
   rw [regstateeq_res] at hl_res, try { dsimp at hl_res },
   -- const
-  set! MAX_SUM := (232113757366008801543585789 : F) with hc_MAX_SUM,
+  mkdef hc_MAX_SUM : MAX_SUM = (232113757366008801543585789 : F),
   -- compound assert eq
   step_assert_eq hpc0 hpc1 with temp0,
   step_assert_eq hpc2 with temp1,
   step_assert_eq hpc3 with temp2,
   step_assert_eq hpc4 with temp3,
   step_assert_eq hpc5 with temp4,
-  have a0: mem (range_check_ptr) = MAX_SUM - (res.d0 + res.d1 + res.d2), {
+  have a0: mem range_check_ptr = MAX_SUM - (res.d0 + res.d1 + res.d2), {
     apply assert_eq_reduction temp4.symm,
     try { simp only [add_neg_eq_sub, hin_range_check_ptr, hl_res, hc_MAX_SUM] },
     try { dsimp [cast_BigInt3] },
@@ -58,8 +58,7 @@ begin
   clear temp0 temp1 temp2 temp3 temp4,
   -- tempvar
   step_assert_eq hpc6 hpc7 with tv_range_check_ptr0,
-  generalize' hl_rev_range_check_ptr₁: (range_check_ptr + 4 : F) = range_check_ptr₁,
-  have hl_range_check_ptr₁ := hl_rev_range_check_ptr₁.symm, clear hl_rev_range_check_ptr₁,
+  mkdef hl_range_check_ptr₁ : range_check_ptr₁ = (range_check_ptr + 4 : F),
   have htv_range_check_ptr₁: range_check_ptr₁ = _, {
     apply eq.symm, apply eq.trans tv_range_check_ptr0,
       try { simp only [add_neg_eq_sub, hin_range_check_ptr, hl_res, hc_MAX_SUM, hl_range_check_ptr₁] },
@@ -106,9 +105,9 @@ begin
   use_only (4+0+0), split,
   linarith [],
   split,
-  { arith_simps,
-    rw [←htv_range_check_ptr₁, hl_range_check_ptr₁, hin_range_check_ptr],
-    try { arith_simps, refl <|> norm_cast }, try { refl } },
+  { try { norm_num1 }, arith_simps,
+    try { rw [←htv_range_check_ptr₁] }, try { rw [hl_range_check_ptr₁] }, try { rw [hin_range_check_ptr] },
+    try { ring_nf }, try { arith_simps, refl <|> norm_cast }, try { refl } },
   intro rc_h_range_check_ptr, repeat { rw [add_assoc] at rc_h_range_check_ptr },
   have rc_h_range_check_ptr' := range_checked_add_right rc_h_range_check_ptr,
   -- Final Proof
@@ -124,8 +123,10 @@ begin
   cases rc_h_range_check_ptr' (0) (by norm_num1) with n hn, arith_simps at hn,
   use_only [n], { simp only [a0.symm, hin_range_check_ptr], arith_simps, exact hn },
   have rc_h_range_check_ptr₁ := range_checked_offset' rc_h_range_check_ptr,
-  have rc_h_range_check_ptr₁' := range_checked_add_right rc_h_range_check_ptr₁,try { norm_cast at rc_h_range_check_ptr₁' },
+  have rc_h_range_check_ptr₁' := range_checked_add_right rc_h_range_check_ptr₁,
+    try { norm_cast at rc_h_range_check_ptr₁' }, try { rw [add_zero] at rc_h_range_check_ptr₁' },
   use_only [range_check_ptr₁, hl_range_check_ptr₁],
+  try { dsimp }, try { arith_simps },
   use_only [a8],
   cases rc_h_range_check_ptr' (1) (by norm_num1) with n hn, arith_simps at hn,
   use_only [n], { simp only [a8.symm, hl_range_check_ptr₁, hin_range_check_ptr], arith_simps, exact hn },
@@ -135,7 +136,7 @@ begin
   use_only [a10],
   cases rc_h_range_check_ptr' (3) (by norm_num1) with n hn, arith_simps at hn,
   use_only [n], { simp only [a10.symm, hl_range_check_ptr₁, hin_range_check_ptr], arith_simps, exact hn },
-  try { split, linarith },
+  try { split, trivial <|> linarith },
   try { ensures_simps; try { simp only [add_neg_eq_sub, hin_range_check_ptr, hl_res, hc_MAX_SUM, hl_range_check_ptr₁, htv_range_check_ptr₁] }, },
   try { dsimp [cast_BigInt3] },
   try { arith_simps; try { split }; triv <|> refl <|> simp <|> abel; try { norm_num } },

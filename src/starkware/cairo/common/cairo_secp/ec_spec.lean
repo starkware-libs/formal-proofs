@@ -12,8 +12,14 @@ import starkware.cairo.common.cairo_secp.bigint_spec
 import starkware.cairo.common.cairo_secp.field_spec
 import starkware.cairo.common.cairo_secp.constants_spec
 
+import starkware.cairo.common.cairo_secp.bigint3_spec
+import starkware.cairo.common.cairo_secp.ec_point_spec
+
 -- JDA: Additional import.
 import starkware.cairo.common.cairo_secp.elliptic_curves
+
+open starkware.cairo.common.cairo_secp.bigint3
+open starkware.cairo.common.cairo_secp.ec_point
 
 open starkware.cairo.common.cairo_secp.bigint
 open starkware.cairo.common.cairo_secp.field
@@ -27,31 +33,13 @@ variables {F : Type} [field F] [decidable_eq F] [prelude_hyps F]
 
 -- Main scope definitions.
 
-@[ext] structure EcPoint (F : Type) :=
-  ( x : BigInt3 F ) ( y : BigInt3 F )
-@[ext] structure π_EcPoint (F : Type) :=
-  ( σ_ptr : F ) ( x : BigInt3 F ) ( y : BigInt3 F )
-@[reducible] def φ_EcPoint.x := 0
-@[reducible] def φ_EcPoint.y := 3
-@[reducible] def φ_EcPoint.SIZE := 6
-@[reducible] def cast_EcPoint (mem : F → F) (p : F) : EcPoint F := {
-  x := cast_BigInt3 mem (p + φ_EcPoint.x),
-  y := cast_BigInt3 mem (p + φ_EcPoint.y)
-}
-@[reducible] def cast_π_EcPoint (mem : F → F) (p : F) : π_EcPoint F := {
-  σ_ptr := mem p,
-  x := cast_BigInt3 mem ((mem p) + φ_EcPoint.x),
-  y := cast_BigInt3 mem ((mem p) + φ_EcPoint.y)
-}
-instance π_EcPoint_to_F : has_coe (π_EcPoint F) F := ⟨λ s, s.σ_ptr⟩
-
 -- End of main scope definitions.
 
 /-
 -- Data for writing the specifications.
 -/
 
-structure BddECPointData (secpF : Type*) [field secpF] (pt : EcPoint F) :=
+structure BddECPointData {mem : F → F} (secpF : Type*) [field secpF] (pt : EcPoint mem) :=
 (ix iy : bigint3)
 (ixbdd : ix.bounded (3 * BASE - 1))
 (iybdd : iy.bounded (3 * BASE - 1))
@@ -59,7 +47,7 @@ structure BddECPointData (secpF : Type*) [field secpF] (pt : EcPoint F) :=
 (ptyeq : pt.y = iy.toBigInt3)
 (onEC : pt.x = ⟨0, 0, 0⟩ ∨ (iy.val : secpF)^2 = (ix.val : secpF)^3 + 7)
 
-theorem BddECPointData.onEC' {secpF : Type*} [field secpF] {pt : EcPoint F}
+theorem BddECPointData.onEC' {mem : F → F} {secpF : Type*} [field secpF] {pt : EcPoint mem}
     (h : BddECPointData secpF pt) (h' : pt.x ≠ ⟨0, 0, 0⟩) :
   (h.iy.val : secpF)^2 = (h.ix.val : secpF)^3 + 7 :=
 or.resolve_left h.onEC h'
@@ -72,14 +60,14 @@ variables
   [char_p secpF SECP_PRIME]
   [decidable_eq secpF]
 
-def BddECPointData.toECPoint {pt : EcPoint F} (h : BddECPointData secpF pt) :
+def BddECPointData.toECPoint {mem : F → F} {pt : EcPoint mem} (h : BddECPointData secpF pt) :
     ECPoint secpF :=
 if h' : pt.x = ⟨0, 0, 0⟩ then
   ECPoint.ZeroPoint
 else
   ECPoint.AffinePoint ⟨h.ix.val, h.iy.val, h.onEC' h'⟩
 
-def BddECPointData.zero : BddECPointData secpF (⟨⟨0, 0, 0⟩, ⟨0, 0, 0⟩⟩ : EcPoint F)  :=
+def BddECPointData.zero {mem : F → F} : BddECPointData secpF (⟨⟨0, 0, 0⟩, ⟨0, 0, 0⟩⟩ : EcPoint mem)  :=
 { ix := ⟨0, 0, 0⟩,
   iy := ⟨0, 0, 0⟩,
   ixbdd := by simp [bigint3.bounded]; norm_num1,
@@ -96,7 +84,43 @@ class secp_field (secpF : Type*) extends ec_field secpF, char_p secpF SECP_PRIME
 (seven_not_square : ∀ y : secpF, y^2 ≠ 7)
 (neg_seven_not_cube : ∀ x : secpF, x^3 ≠ -7)
 (order_large : ∀ {pt : ECPoint secpF}, pt ≠ 0 →
-                 ∀ {n : ℕ}, n < 2^SECP_LOG2_BOUND → ¬ (n • pt = 0 ∨ n • pt = pt ∨ n • pt = -pt))
+                 ∀ {n : ℕ}, n ≠ 0 → n < 2^(SECP_LOG2_BOUND + 1) + 2 → n • pt ≠ 0)
+
+theorem secp_field.order_large_corr {secpF : Type*} [secp_field secpF]
+  {pt : ECPoint secpF} (ptnz : pt ≠ 0) :
+    ∀ {n : ℕ}, n < 2^SECP_LOG2_BOUND → ¬ ((n * 2) • pt = pt ∨ (n * 2) • pt = -pt) :=
+begin
+  rintros n nlt (h | h),
+  { cases n with npred,
+    { rw [zero_mul, zero_smul] at h, exact ptnz h.symm},
+    have : (npred * 2 + 1) • pt = 0,
+    { rw [nat.succ_eq_add_one, add_mul, one_mul] at h,
+      have : (npred * 2 + 1 + 1) • pt = pt := h,
+      rw [add_smul, one_smul, ←sub_eq_zero, add_sub_cancel] at this,
+      exact this },
+    revert this, apply secp_field.order_large ptnz,
+    { apply nat.succ_ne_zero },
+    apply lt_of_lt_of_le,
+    apply add_lt_add_right,
+    apply lt_of_le_of_lt,
+    apply mul_le_mul_of_nonneg_right,
+    apply le_of_lt,
+    apply lt_trans (nat.lt_succ_self _) nlt,
+    norm_num,
+    apply nat.lt_succ_self,
+    norm_num [SECP_LOG2_BOUND],
+  },
+  rw [eq_neg_iff_add_eq_zero, ← one_smul _ pt, smul_smul (n * 2) 1, ← add_smul] at h,
+  revert h,
+  apply secp_field.order_large ptnz,
+  { apply nat.succ_ne_zero },
+  rw [mul_assoc, mul_one],
+  apply lt_trans,
+  change (_ < 2^SECP_LOG2_BOUND * 2 + 1),
+  apply add_lt_add_right,
+  apply zero_lt.mul_lt_mul_right' nlt,
+  norm_num, norm_num [SECP_LOG2_BOUND]
+end
 
 theorem secp_field.y_ne_zero_of_on_ec  {secpF : Type*} [secp_field secpF] {x y : secpF}
   (h : on_ec (x, y)) : y ≠ 0 :=
@@ -127,13 +151,13 @@ end
 
 namespace BddECPointData
 
-theorem toECPoint_zero (secpF : Type) [secp_field secpF] :
-  (BddECPointData.zero : BddECPointData secpF (⟨⟨0, 0, 0⟩, ⟨0, 0, 0⟩⟩ : EcPoint F)).toECPoint =
+theorem toECPoint_zero {mem : F → F} (secpF : Type) [secp_field secpF] :
+  (BddECPointData.zero : BddECPointData secpF (⟨⟨0, 0, 0⟩, ⟨0, 0, 0⟩⟩ : EcPoint mem)).toECPoint =
     0 :=
 by { simp [toECPoint], refl }
 
-theorem pt_zero_iff' {secpF : Type} [secp_field secpF]
-    {pt : EcPoint F} (h : BddECPointData secpF pt) :
+theorem pt_zero_iff' {mem : F → F} {secpF : Type} [secp_field secpF]
+    {pt : EcPoint mem} (h : BddECPointData secpF pt) :
   pt.x = ⟨0, 0, 0⟩ ↔ h.ix.val = 0 :=
 begin
   split,
@@ -149,8 +173,8 @@ begin
   simp [heq]
 end
 
-theorem pt_zero_iff {secpF : Type} [secp_field secpF]
-    {pt : EcPoint F} (h : BddECPointData secpF pt) :
+theorem pt_zero_iff {mem : F → F} {secpF : Type} [secp_field secpF]
+    {pt : EcPoint mem} (h : BddECPointData secpF pt) :
   pt.x = ⟨0, 0, 0⟩ ↔ (h.ix.val : secpF) = 0 :=
 begin
   split,
@@ -166,11 +190,11 @@ begin
   simp [heq]
 end
 
-theorem toECPoint_eq_zero_iff {secpF : Type} [secp_field secpF] {pt : EcPoint F} (h : BddECPointData secpF pt) :
+theorem toECPoint_eq_zero_iff {mem : F → F} {secpF : Type} [secp_field secpF] {pt : EcPoint mem} (h : BddECPointData secpF pt) :
   h.toECPoint = 0 ↔ pt.x = ⟨0, 0, 0⟩ :=
 by { by_cases h : pt.x = ⟨0, 0, 0⟩; simp [BddECPointData.toECPoint, h, ECPoint.zero_def] }
 
-theorem toECPoint_eq_of_eq_of_ne {secpF : Type} [secp_field secpF] {pt0 pt1 : EcPoint F}
+theorem toECPoint_eq_of_eq_of_ne {mem : F → F} {secpF : Type} [secp_field secpF] {pt0 pt1 : EcPoint mem}
     {h0 : BddECPointData secpF pt0}
     {h1 : BddECPointData secpF pt1}
     (hxeq : (h0.ix.val : secpF) = (h1.ix.val : secpF))
@@ -228,8 +252,8 @@ end
 /- ec_negate autogenerated specification -/
 
 -- Do not change this definition.
-def auto_spec_ec_negate (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint F) (ρ_range_check_ptr : F) (ρ_point : EcPoint F) : Prop :=
-  ∃ (κ₁ : ℕ) (range_check_ptr₁ : F) (minus_y : BigInt3 F), spec_nondet_bigint3 mem κ₁ range_check_ptr range_check_ptr₁ minus_y ∧
+def auto_spec_ec_negate (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint mem) (ρ_range_check_ptr : F) (ρ_point : EcPoint mem) : Prop :=
+  ∃ (κ₁ : ℕ) (range_check_ptr₁ : F) (minus_y : BigInt3 mem), spec_nondet_bigint3 mem κ₁ range_check_ptr range_check_ptr₁ minus_y ∧
   ∃ (κ₂ : ℕ) (range_check_ptr₂ : F), spec_verify_zero mem κ₂ range_check_ptr₁ {
     d0 := minus_y.d0 + point.y.d0,
     d1 := minus_y.d1 + point.y.d1,
@@ -243,7 +267,7 @@ def auto_spec_ec_negate (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point 
   }
 
 -- You may change anything in this definition except the name and arguments.
-def spec_ec_negate (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint F) (ρ_range_check_ptr : F) (ρ_point : EcPoint F) : Prop :=
+def spec_ec_negate (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint mem) (ρ_range_check_ptr : F) (ρ_point : EcPoint mem) : Prop :=
   ∀ ix iy : bigint3,
     ix.bounded (3 * BASE - 1) →
     iy.bounded (3 * BASE - 1) →
@@ -260,7 +284,7 @@ def spec_ec_negate (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcP
 theorem sound_ec_negate
     {mem : F → F}
     (κ : ℕ)
-    (range_check_ptr : F) (point : EcPoint F) (ρ_range_check_ptr : F) (ρ_point : EcPoint F)
+    (range_check_ptr : F) (point : EcPoint mem) (ρ_range_check_ptr : F) (ρ_point : EcPoint mem)
     (h_auto : auto_spec_ec_negate mem κ range_check_ptr point ρ_range_check_ptr ρ_point) :
   spec_ec_negate mem κ range_check_ptr point ρ_range_check_ptr ρ_point :=
 begin
@@ -279,14 +303,14 @@ end
 
 /- Better specification. -/
 
-def spec_ec_negate' ( pt : EcPoint F ) ( ret : EcPoint F )
+def spec_ec_negate' {mem : F → F} ( pt : EcPoint mem ) ( ret : EcPoint mem )
     (secpF : Type) [secp_field secpF] : Prop :=
   ∀ h : BddECPointData secpF pt,
     ∃ hret : BddECPointData secpF ret,
       hret.toECPoint = -h.toECPoint
 
 theorem spec_ec_negate'_of_spec_ec_negate
-    {mem : F → F} {κ : ℕ} {range_check_ptr : F} {pt : EcPoint F} {ret0 : F} {ret : EcPoint F}
+    {mem : F → F} {κ : ℕ} {range_check_ptr : F} {pt : EcPoint mem} {ret0 : F} {ret : EcPoint mem}
     (h : spec_ec_negate mem κ range_check_ptr pt ret0 ret)
     (secpF : Type) [secp_field secpF] :
   spec_ec_negate' pt ret secpF :=
@@ -327,10 +351,10 @@ end
 /- compute_doubling_slope autogenerated specification -/
 
 -- Do not change this definition.
-def auto_spec_compute_doubling_slope (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint F) (ρ_range_check_ptr : F) (ρ_slope : BigInt3 F) : Prop :=
-  ∃ (κ₁ : ℕ) (range_check_ptr₁ : F) (slope : BigInt3 F), spec_nondet_bigint3 mem κ₁ range_check_ptr range_check_ptr₁ slope ∧
-  ∃ (κ₂ : ℕ) (x_sqr : UnreducedBigInt3 F), spec_unreduced_sqr mem κ₂ point.x x_sqr ∧
-  ∃ (κ₃ : ℕ) (slope_y : UnreducedBigInt3 F), spec_unreduced_mul mem κ₃ slope point.y slope_y ∧
+def auto_spec_compute_doubling_slope (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint mem) (ρ_range_check_ptr : F) (ρ_slope : BigInt3 mem) : Prop :=
+  ∃ (κ₁ : ℕ) (range_check_ptr₁ : F) (slope : BigInt3 mem), spec_nondet_bigint3 mem κ₁ range_check_ptr range_check_ptr₁ slope ∧
+  ∃ (κ₂ : ℕ) (x_sqr : UnreducedBigInt3 mem), spec_unreduced_sqr mem κ₂ point.x x_sqr ∧
+  ∃ (κ₃ : ℕ) (slope_y : UnreducedBigInt3 mem), spec_unreduced_mul mem κ₃ slope point.y slope_y ∧
   ∃ (κ₄ : ℕ) (range_check_ptr₂ : F), spec_verify_zero mem κ₄ range_check_ptr₁ {
     d0 := 3 * x_sqr.d0 - 2 * slope_y.d0,
     d1 := 3 * x_sqr.d1 - 2 * slope_y.d1,
@@ -341,7 +365,7 @@ def auto_spec_compute_doubling_slope (mem : F → F) (κ : ℕ) (range_check_ptr
   ρ_slope = slope
 
 -- You may change anything in this definition except the name and arguments.
-def spec_compute_doubling_slope (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint F) (ρ_range_check_ptr : F) (ρ_slope : BigInt3 F) : Prop :=
+def spec_compute_doubling_slope (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint mem) (ρ_range_check_ptr : F) (ρ_slope : BigInt3 mem) : Prop :=
   ∀ ix iy : bigint3,
     ix.bounded (3 * BASE - 1) →
     iy.bounded (3 * BASE - 1) →
@@ -358,7 +382,7 @@ def spec_compute_doubling_slope (mem : F → F) (κ : ℕ) (range_check_ptr : F)
 theorem sound_compute_doubling_slope
     {mem : F → F}
     (κ : ℕ)
-    (range_check_ptr : F) (point : EcPoint F) (ρ_range_check_ptr : F) (ρ_slope : BigInt3 F)
+    (range_check_ptr : F) (point : EcPoint mem) (ρ_range_check_ptr : F) (ρ_slope : BigInt3 mem)
     (h_auto : auto_spec_compute_doubling_slope mem κ range_check_ptr point ρ_range_check_ptr ρ_slope) :
   spec_compute_doubling_slope mem κ range_check_ptr point ρ_range_check_ptr ρ_slope :=
 begin
@@ -406,14 +430,14 @@ end
 /- compute_slope autogenerated specification -/
 
 -- Do not change this definition.
-def auto_spec_compute_slope (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 point1 : EcPoint F) (ρ_range_check_ptr : F) (ρ_slope : BigInt3 F) : Prop :=
-  ∃ (κ₁ : ℕ) (range_check_ptr₁ : F) (slope : BigInt3 F), spec_nondet_bigint3 mem κ₁ range_check_ptr range_check_ptr₁ slope ∧
-  ∃ x_diff : BigInt3 F, x_diff = {
+def auto_spec_compute_slope (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 point1 : EcPoint mem) (ρ_range_check_ptr : F) (ρ_slope : BigInt3 mem) : Prop :=
+  ∃ (κ₁ : ℕ) (range_check_ptr₁ : F) (slope : BigInt3 mem), spec_nondet_bigint3 mem κ₁ range_check_ptr range_check_ptr₁ slope ∧
+  ∃ x_diff : BigInt3 mem, x_diff = {
     d0 := point0.x.d0 - point1.x.d0,
     d1 := point0.x.d1 - point1.x.d1,
     d2 := point0.x.d2 - point1.x.d2
   } ∧
-  ∃ (κ₂ : ℕ) (x_diff_slope : UnreducedBigInt3 F), spec_unreduced_mul mem κ₂ x_diff slope x_diff_slope ∧
+  ∃ (κ₂ : ℕ) (x_diff_slope : UnreducedBigInt3 mem), spec_unreduced_mul mem κ₂ x_diff slope x_diff_slope ∧
   ∃ (κ₃ : ℕ) (range_check_ptr₂ : F), spec_verify_zero mem κ₃ range_check_ptr₁ {
     d0 := x_diff_slope.d0 - point0.y.d0 + point1.y.d0,
     d1 := x_diff_slope.d1 - point0.y.d1 + point1.y.d1,
@@ -424,7 +448,7 @@ def auto_spec_compute_slope (mem : F → F) (κ : ℕ) (range_check_ptr : F) (po
   ρ_slope = slope
 
 -- You may change anything in this definition except the name and arguments.
-def spec_compute_slope (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 point1 : EcPoint F) (ρ_range_check_ptr : F) (ρ_slope : BigInt3 F) : Prop :=
+def spec_compute_slope (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 point1 : EcPoint mem) (ρ_range_check_ptr : F) (ρ_slope : BigInt3 mem) : Prop :=
   ∀ ix0 iy0 ix1 iy1 : bigint3,
     ix0.bounded (3 * BASE - 1) →
     iy0.bounded (3 * BASE - 1) →
@@ -446,7 +470,7 @@ def spec_compute_slope (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 
 theorem sound_compute_slope
     {mem : F → F}
     (κ : ℕ)
-    (range_check_ptr : F) (point0 point1 : EcPoint F) (ρ_range_check_ptr : F) (ρ_slope : BigInt3 F)
+    (range_check_ptr : F) (point0 point1 : EcPoint mem) (ρ_range_check_ptr : F) (ρ_slope : BigInt3 mem)
     (h_auto : auto_spec_compute_slope mem κ range_check_ptr point0 point1 ρ_range_check_ptr ρ_slope) :
   spec_compute_slope mem κ range_check_ptr point0 point1 ρ_range_check_ptr ρ_slope :=
 begin
@@ -494,17 +518,17 @@ end
 /- ec_double autogenerated specification -/
 
 -- Do not change this definition.
-def auto_spec_ec_double_block5 (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint F) (ρ_range_check_ptr : F) (ρ_res : EcPoint F) : Prop :=
-  ∃ (κ₁ : ℕ) (range_check_ptr₁ : F) (slope : BigInt3 F), spec_compute_doubling_slope mem κ₁ range_check_ptr point range_check_ptr₁ slope ∧
-  ∃ (κ₂ : ℕ) (slope_sqr : UnreducedBigInt3 F), spec_unreduced_sqr mem κ₂ slope slope_sqr ∧
-  ∃ (κ₃ : ℕ) (range_check_ptr₂ : F) (new_x : BigInt3 F), spec_nondet_bigint3 mem κ₃ range_check_ptr₁ range_check_ptr₂ new_x ∧
-  ∃ (κ₄ : ℕ) (range_check_ptr₃ : F) (new_y : BigInt3 F), spec_nondet_bigint3 mem κ₄ range_check_ptr₂ range_check_ptr₃ new_y ∧
+def auto_spec_ec_double_block5 (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint mem) (ρ_range_check_ptr : F) (ρ_res : EcPoint mem) : Prop :=
+  ∃ (κ₁ : ℕ) (range_check_ptr₁ : F) (slope : BigInt3 mem), spec_compute_doubling_slope mem κ₁ range_check_ptr point range_check_ptr₁ slope ∧
+  ∃ (κ₂ : ℕ) (slope_sqr : UnreducedBigInt3 mem), spec_unreduced_sqr mem κ₂ slope slope_sqr ∧
+  ∃ (κ₃ : ℕ) (range_check_ptr₂ : F) (new_x : BigInt3 mem), spec_nondet_bigint3 mem κ₃ range_check_ptr₁ range_check_ptr₂ new_x ∧
+  ∃ (κ₄ : ℕ) (range_check_ptr₃ : F) (new_y : BigInt3 mem), spec_nondet_bigint3 mem κ₄ range_check_ptr₂ range_check_ptr₃ new_y ∧
   ∃ (κ₅ : ℕ) (range_check_ptr₄ : F), spec_verify_zero mem κ₅ range_check_ptr₃ {
     d0 := slope_sqr.d0 - new_x.d0 - 2 * point.x.d0,
     d1 := slope_sqr.d1 - new_x.d1 - 2 * point.x.d1,
     d2 := slope_sqr.d2 - new_x.d2 - 2 * point.x.d2
   } range_check_ptr₄ ∧
-  ∃ (κ₆ : ℕ) (x_diff_slope : UnreducedBigInt3 F), spec_unreduced_mul mem κ₆ {
+  ∃ (κ₆ : ℕ) (x_diff_slope : UnreducedBigInt3 mem), spec_unreduced_mul mem κ₆ {
     d0 := point.x.d0 - new_x.d0,
     d1 := point.x.d1 - new_x.d1,
     d2 := point.x.d2 - new_x.d2
@@ -521,7 +545,7 @@ def auto_spec_ec_double_block5 (mem : F → F) (κ : ℕ) (range_check_ptr : F) 
     y := new_y
   }
 
-def auto_spec_ec_double (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint F) (ρ_range_check_ptr : F) (ρ_res : EcPoint F) : Prop :=
+def auto_spec_ec_double (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint mem) (ρ_range_check_ptr : F) (ρ_res : EcPoint mem) : Prop :=
   ((point.x.d0 = 0 ∧
     ((point.x.d1 = 0 ∧
       ((point.x.d2 = 0 ∧
@@ -539,7 +563,7 @@ def auto_spec_ec_double (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point 
     κ₁ + 1 ≤ κ))
 
 -- Added manually
-theorem auto_spec_ec_double_better {mem : F → F} {κ : ℕ}{range_check_ptr : F} {point : EcPoint F} {ρ_range_check_ptr : F} {ρ_res : EcPoint F} (h : auto_spec_ec_double mem κ range_check_ptr point ρ_range_check_ptr ρ_res ) :
+theorem auto_spec_ec_double_better {mem : F → F} {κ : ℕ}{range_check_ptr : F} {point : EcPoint mem} {ρ_range_check_ptr : F} {ρ_res : EcPoint mem} (h : auto_spec_ec_double mem κ range_check_ptr point ρ_range_check_ptr ρ_res ) :
   (point.x.d0 = 0 ∧ point.x.d1 = 0 ∧ point.x.d2 = 0 ∧
       ρ_range_check_ptr = range_check_ptr ∧ ρ_res = point) ∨
   ((point.x.d2 ≠ 0 ∨ point.x.d1 ≠ 0 ∨ point.x.d0 ≠ 0) ∧
@@ -553,7 +577,7 @@ begin
 end
 
 -- You may change anything in this definition except the name and arguments.
-def spec_ec_double (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint F) (ρ_range_check_ptr : F) (ρ_res : EcPoint F) : Prop :=
+def spec_ec_double (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint mem) (ρ_range_check_ptr : F) (ρ_res : EcPoint mem) : Prop :=
   (point.x = ⟨0, 0, 0⟩ ∧ ρ_res = point) ∨
   (point.x ≠ ⟨0, 0, 0⟩ ∧
     ∀ ix iy : bigint3,
@@ -576,7 +600,7 @@ def spec_ec_double (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcP
 theorem sound_ec_double
     {mem : F → F}
     (κ : ℕ)
-    (range_check_ptr : F) (point : EcPoint F) (ρ_range_check_ptr : F) (ρ_res : EcPoint F)
+    (range_check_ptr : F) (point : EcPoint mem) (ρ_range_check_ptr : F) (ρ_res : EcPoint mem)
     (h_auto : auto_spec_ec_double mem κ range_check_ptr point ρ_range_check_ptr ρ_res) :
   spec_ec_double mem κ range_check_ptr point ρ_range_check_ptr ρ_res :=
 begin
@@ -656,14 +680,14 @@ end
 
 /- Better specification -/
 
-def spec_ec_double' ( pt : EcPoint F ) ( ret1 : EcPoint F )
+def spec_ec_double' {mem : F → F} ( pt : EcPoint mem ) ( ret1 : EcPoint mem )
     (secpF : Type) [secp_field secpF] : Prop :=
   ∀ h : BddECPointData secpF pt,
     ∃ hret : BddECPointData secpF ret1,
       hret.toECPoint = 2 • h.toECPoint
 
 theorem spec_ec_double'_of_spec_ec_double
-    {mem : F → F} {κ : ℕ} {range_check_ptr : F} {pt : EcPoint F} {ret0 : F} {ret1 : EcPoint F}
+    {mem : F → F} {κ : ℕ} {range_check_ptr : F} {pt : EcPoint mem} {ret0 : F} {ret1 : EcPoint mem}
     (h : spec_ec_double mem κ range_check_ptr pt ret0 ret1)
     (secpF : Type) [secp_field secpF] :
   spec_ec_double' pt ret1 secpF :=
@@ -727,17 +751,17 @@ end
 /- fast_ec_add autogenerated specification -/
 
 -- Do not change this definition.
-def auto_spec_fast_ec_add_block9 (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 point1 : EcPoint F) (ρ_range_check_ptr : F) (ρ_res : EcPoint F) : Prop :=
-  ∃ (κ₁ : ℕ) (range_check_ptr₁ : F) (slope : BigInt3 F), spec_compute_slope mem κ₁ range_check_ptr point0 point1 range_check_ptr₁ slope ∧
-  ∃ (κ₂ : ℕ) (slope_sqr : UnreducedBigInt3 F), spec_unreduced_sqr mem κ₂ slope slope_sqr ∧
-  ∃ (κ₃ : ℕ) (range_check_ptr₂ : F) (new_x : BigInt3 F), spec_nondet_bigint3 mem κ₃ range_check_ptr₁ range_check_ptr₂ new_x ∧
-  ∃ (κ₄ : ℕ) (range_check_ptr₃ : F) (new_y : BigInt3 F), spec_nondet_bigint3 mem κ₄ range_check_ptr₂ range_check_ptr₃ new_y ∧
+def auto_spec_fast_ec_add_block9 (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 point1 : EcPoint mem) (ρ_range_check_ptr : F) (ρ_res : EcPoint mem) : Prop :=
+  ∃ (κ₁ : ℕ) (range_check_ptr₁ : F) (slope : BigInt3 mem), spec_compute_slope mem κ₁ range_check_ptr point0 point1 range_check_ptr₁ slope ∧
+  ∃ (κ₂ : ℕ) (slope_sqr : UnreducedBigInt3 mem), spec_unreduced_sqr mem κ₂ slope slope_sqr ∧
+  ∃ (κ₃ : ℕ) (range_check_ptr₂ : F) (new_x : BigInt3 mem), spec_nondet_bigint3 mem κ₃ range_check_ptr₁ range_check_ptr₂ new_x ∧
+  ∃ (κ₄ : ℕ) (range_check_ptr₃ : F) (new_y : BigInt3 mem), spec_nondet_bigint3 mem κ₄ range_check_ptr₂ range_check_ptr₃ new_y ∧
   ∃ (κ₅ : ℕ) (range_check_ptr₄ : F), spec_verify_zero mem κ₅ range_check_ptr₃ {
     d0 := slope_sqr.d0 - new_x.d0 - point0.x.d0 - point1.x.d0,
     d1 := slope_sqr.d1 - new_x.d1 - point0.x.d1 - point1.x.d1,
     d2 := slope_sqr.d2 - new_x.d2 - point0.x.d2 - point1.x.d2
   } range_check_ptr₄ ∧
-  ∃ (κ₆ : ℕ) (x_diff_slope : UnreducedBigInt3 F), spec_unreduced_mul mem κ₆ {
+  ∃ (κ₆ : ℕ) (x_diff_slope : UnreducedBigInt3 mem), spec_unreduced_mul mem κ₆ {
     d0 := point0.x.d0 - new_x.d0,
     d1 := point0.x.d1 - new_x.d1,
     d2 := point0.x.d2 - new_x.d2
@@ -754,7 +778,7 @@ def auto_spec_fast_ec_add_block9 (mem : F → F) (κ : ℕ) (range_check_ptr : F
     y := new_y
   }
 
-def auto_spec_fast_ec_add_block5 (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 point1 : EcPoint F) (ρ_range_check_ptr : F) (ρ_res : EcPoint F) : Prop :=
+def auto_spec_fast_ec_add_block5 (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 point1 : EcPoint mem) (ρ_range_check_ptr : F) (ρ_res : EcPoint mem) : Prop :=
   ((point1.x.d0 = 0 ∧
     ((point1.x.d1 = 0 ∧
       ((point1.x.d2 = 0 ∧
@@ -771,7 +795,7 @@ def auto_spec_fast_ec_add_block5 (mem : F → F) (κ : ℕ) (range_check_ptr : F
     ∃ (κ₁ : ℕ), auto_spec_fast_ec_add_block9 mem κ₁ range_check_ptr point0 point1 ρ_range_check_ptr ρ_res ∧
     κ₁ + 1 ≤ κ))
 
-def auto_spec_fast_ec_add (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 point1 : EcPoint F) (ρ_range_check_ptr : F) (ρ_res : EcPoint F) : Prop :=
+def auto_spec_fast_ec_add (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 point1 : EcPoint mem) (ρ_range_check_ptr : F) (ρ_res : EcPoint mem) : Prop :=
   ((point0.x.d0 = 0 ∧
     ((point0.x.d1 = 0 ∧
       ((point0.x.d2 = 0 ∧
@@ -789,7 +813,7 @@ def auto_spec_fast_ec_add (mem : F → F) (κ : ℕ) (range_check_ptr : F) (poin
     κ₁ + 1 ≤ κ))
 
 -- You may change anything in this definition except the name and arguments.
-def spec_fast_ec_add (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 point1 : EcPoint F) (ρ_range_check_ptr : F) (ρ_res : EcPoint F) : Prop :=
+def spec_fast_ec_add (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 point1 : EcPoint mem) (ρ_range_check_ptr : F) (ρ_res : EcPoint mem) : Prop :=
   ∀ ix0 iy0 ix1 iy1 : bigint3,
   ix0.bounded (3 * BASE - 1) →
   iy0.bounded (3 * BASE - 1) →
@@ -814,7 +838,7 @@ def spec_fast_ec_add (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 po
 
 /- fast_ec_add soundness theorem -/
 
-theorem fast_ec_add_block5_spec_better {mem : F → F} {κ : ℕ}{range_check_ptr : F} {pt0 pt1 : EcPoint F} {ret0 : F} {ret1 : EcPoint F}
+theorem fast_ec_add_block5_spec_better {mem : F → F} {κ : ℕ}{range_check_ptr : F} {pt0 pt1 : EcPoint mem} {ret0 : F} {ret1 : EcPoint mem}
     (h_auto : auto_spec_fast_ec_add_block5 mem κ range_check_ptr pt0 pt1 ret0 ret1) :
   (pt1.x.d0 = 0 ∧ pt1.x.d1 = 0 ∧ pt1.x.d2 = 0 ∧
     ret0 = range_check_ptr ∧ ret1 = pt0) ∨
@@ -833,7 +857,7 @@ begin
     exact ⟨κ₁, hblock9.1⟩ }
 end
 
-theorem ec_add_mainb_spec_better {mem : F → F} {κ : ℕ} {range_check_ptr : F} {pt0 pt1 : EcPoint F} {ret0 : F} {ret1 : EcPoint F}
+theorem ec_add_mainb_spec_better {mem : F → F} {κ : ℕ} {range_check_ptr : F} {pt0 pt1 : EcPoint mem} {ret0 : F} {ret1 : EcPoint mem}
     (h_auto : auto_spec_fast_ec_add mem κ range_check_ptr pt0 pt1 ret0 ret1) :
   (pt0.x.d0 = 0 ∧ pt0.x.d1 = 0 ∧ pt0.x.d2 = 0 ∧
     ret0 = range_check_ptr ∧ ret1 = pt1) ∨
@@ -871,7 +895,7 @@ end
 theorem sound_fast_ec_add
     {mem : F → F}
     (κ : ℕ)
-    (range_check_ptr : F) (point0 point1 : EcPoint F) (ρ_range_check_ptr : F) (ρ_res : EcPoint F)
+    (range_check_ptr : F) (point0 point1 : EcPoint mem) (ρ_range_check_ptr : F) (ρ_res : EcPoint mem)
     (h_auto : auto_spec_fast_ec_add mem κ range_check_ptr point0 point1 ρ_range_check_ptr ρ_res) :
   spec_fast_ec_add mem κ range_check_ptr point0 point1 ρ_range_check_ptr ρ_res :=
 begin
@@ -956,7 +980,7 @@ end
 Better specification of fast_ec_add
 -/
 
-def spec_fast_ec_add' ( pt0 pt1 : EcPoint F ) ( ret1 : EcPoint F )
+def spec_fast_ec_add' {mem : F → F} ( pt0 pt1 : EcPoint mem ) ( ret1 : EcPoint mem )
     (secpF : Type) [secp_field secpF] : Prop :=
   ∀ h0 : BddECPointData secpF pt0,
   ∀ h1 : BddECPointData secpF pt1,
@@ -965,7 +989,7 @@ def spec_fast_ec_add' ( pt0 pt1 : EcPoint F ) ( ret1 : EcPoint F )
       hret.toECPoint = h0.toECPoint + h1.toECPoint
 
 theorem spec_fast_ec_add'_of_spec_ec_add
-    {mem : F → F} {κ : ℕ} {range_check_ptr : F} {pt0 pt1 : EcPoint F} {ret0 : F} {ret1 : EcPoint F}
+    {mem : F → F} {κ : ℕ} {range_check_ptr : F} {pt0 pt1 : EcPoint mem} {ret0 : F} {ret1 : EcPoint mem}
     (h : spec_fast_ec_add mem κ range_check_ptr pt0 pt1 ret0 ret1)
     (secpF : Type) [secp_field secpF] :
   spec_fast_ec_add' pt0 pt1 ret1 secpF :=
@@ -1083,8 +1107,8 @@ end
 /- ec_add autogenerated specification -/
 
 -- Do not change this definition.
-def auto_spec_ec_add (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 point1 : EcPoint F) (ρ_range_check_ptr : F) (ρ_res : EcPoint F) : Prop :=
-  ∃ x_diff : BigInt3 F, x_diff = {
+def auto_spec_ec_add (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 point1 : EcPoint mem) (ρ_range_check_ptr : F) (ρ_res : EcPoint mem) : Prop :=
+  ∃ x_diff : SumBigInt3 mem, x_diff = {
     d0 := point0.x.d0 - point1.x.d0,
     d1 := point0.x.d1 - point1.x.d1,
     d2 := point0.x.d2 - point1.x.d2
@@ -1094,14 +1118,14 @@ def auto_spec_ec_add (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 po
     ∃ (κ₂ : ℕ), spec_fast_ec_add mem κ₂ range_check_ptr₁ point0 point1 ρ_range_check_ptr ρ_res ∧
     κ₁ + κ₂ + 21 ≤ κ) ∨
    (same_x ≠ 0 ∧
-    ∃ y_sum : BigInt3 F, y_sum = {
+    ∃ y_sum : SumBigInt3 mem, y_sum = {
       d0 := point0.y.d0 + point1.y.d0,
       d1 := point0.y.d1 + point1.y.d1,
       d2 := point0.y.d2 + point1.y.d2
     } ∧
     ∃ (κ₂ : ℕ) (range_check_ptr₂ opposite_y : F), spec_is_zero mem κ₂ range_check_ptr₁ y_sum range_check_ptr₂ opposite_y ∧
     ((opposite_y ≠ 0 ∧
-      ∃ ZERO_POINT : EcPoint F, ZERO_POINT = {
+      ∃ ZERO_POINT : EcPoint mem, ZERO_POINT = {
         x := { d0 := 0, d1 := 0, d2 := 0 },
         y := { d0 := 0, d1 := 0, d2 := 0 }
       } ∧
@@ -1113,7 +1137,7 @@ def auto_spec_ec_add (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 po
       κ₁ + κ₂ + κ₃ + 21 ≤ κ))))
 
 -- You may change anything in this definition except the name and arguments.
-def spec_ec_add (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 point1 : EcPoint F) (ρ_range_check_ptr : F) (ρ_res : EcPoint F) : Prop :=
+def spec_ec_add (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 point1 : EcPoint mem) (ρ_range_check_ptr : F) (ρ_res : EcPoint mem) : Prop :=
   ∀ (secpF : Type) [secp_field secpF], by exactI
   ∀ h0 : BddECPointData secpF point0,
   ∀ h1 : BddECPointData secpF point1,
@@ -1126,7 +1150,7 @@ def spec_ec_add (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point0 point1 
 theorem sound_ec_add
     {mem : F → F}
     (κ : ℕ)
-    (range_check_ptr : F) (point0 point1 : EcPoint F) (ρ_range_check_ptr : F) (ρ_res : EcPoint F)
+    (range_check_ptr : F) (point0 point1 : EcPoint mem) (ρ_range_check_ptr : F) (ρ_res : EcPoint mem)
     (h_auto : auto_spec_ec_add mem κ range_check_ptr point0 point1 ρ_range_check_ptr ρ_res) :
   spec_ec_add mem κ range_check_ptr point0 point1 ρ_range_check_ptr ρ_res :=
 begin
@@ -1135,7 +1159,7 @@ begin
   intros h0 h1,
   rcases h_auto with ⟨x_diff, x_diff_eq, _, _, same_x, h_x_diff, h'⟩,
   let ix_diff := h0.ix.sub h1.ix,
-  have h2: x_diff = ix_diff.toBigInt3,
+  have h2: (SumBigInt3.toBigInt3 x_diff) = ix_diff.toBigInt3,
   { dsimp [ix_diff], rw [x_diff_eq, bigint3.toBigInt3_sub, ←h0.ptxeq, ←h1.ptxeq], refl },
   have h3: ix_diff.bounded (2^107),
   { rw (show (2^107 : ℤ) = 2^106 + 2^106, by norm_num),
@@ -1145,7 +1169,7 @@ begin
     apply bigint3.bounded_of_bounded_of_le h1.ixbdd,
     rw BASE, simp_int_casts, norm_num },
   rcases h' with ⟨same_x_z, _, h'⟩ | ⟨same_x_nz, h'⟩,
-  { have := h_x_diff _ h2 h3,
+  { have := h_x_diff _ (bigint3.eq_toBigInt3_iff_eq_toSumBigInt3.mpr h2) h3,
     have : ix_diff.val % ↑SECP_PRIME ≠ 0,
     { rcases this with ⟨_, rfl⟩ | ⟨_, _⟩,
       norm_num at same_x_z, assumption },
@@ -1154,7 +1178,7 @@ begin
     dsimp [ix_diff], rw [bigint3.sub_val, ←int.modeq_iff_sub_mod_eq_zero,
       ←char_p.int_coe_eq_int_coe_iff secpF],
     exact this },
-  have := h_x_diff _ h2 h3,
+  have := h_x_diff _ (bigint3.eq_toBigInt3_iff_eq_toSumBigInt3.mpr h2) h3,
   have : ix_diff.val % ↑SECP_PRIME = 0,
   { rcases this with ⟨_, rfl⟩ | ⟨_, _⟩,
     assumption, norm_num at same_x_nz },
@@ -1166,7 +1190,7 @@ begin
   { rw [h1.pt_zero_iff, ←h0eqh1, ←h0.pt_zero_iff] },
   rcases h' with ⟨y_sum, y_sum_eq, _, _, opposite_y, h_opposite_y, h'⟩,
   let iy_sum := h0.iy.add h1.iy,
-  have h2: y_sum = iy_sum.toBigInt3,
+  have h2: (SumBigInt3.toBigInt3 y_sum) = iy_sum.toBigInt3,
   { dsimp [iy_sum], rw [y_sum_eq, bigint3.toBigInt3_add, ←h0.ptyeq, ←h1.ptyeq], refl },
   have h3: iy_sum.bounded (2^107),
   { rw (show (2^107 : ℤ) = 2^106 + 2^106, by norm_num),
@@ -1193,14 +1217,14 @@ begin
     dsimp,
     congr,
     exact h0eqh1,
-    have := h_opposite_y _ h2 h3,
+    have := h_opposite_y _ (bigint3.eq_toBigInt3_iff_eq_toSumBigInt3.mpr h2) h3,
     have : iy_sum.val % ↑SECP_PRIME = 0,
     { rcases this with ⟨_, _⟩ | ⟨_, hh⟩,
       assumption, contradiction },
     rw [bigint3.add_val, ←sub_neg_eq_add, ←int.modeq_iff_sub_mod_eq_zero,
        ←char_p.int_coe_eq_int_coe_iff secpF, int.cast_neg] at this,
     exact this },
-  have := h_opposite_y _ h2 h3,
+  have := h_opposite_y _ (bigint3.eq_toBigInt3_iff_eq_toSumBigInt3.mpr h2) h3,
   have h0iyneh1iy : iy_sum.val % ↑SECP_PRIME ≠ 0,
   { rcases this with ⟨_, rfl⟩ | ⟨_, _⟩,
     norm_num at opposite_y_z,
@@ -1216,7 +1240,7 @@ begin
 end
 
 -- You may change anything in this definition except the name and arguments.
-def spec_ec_mul_inner (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint F) (scalar m ρ_range_check_ptr : F) (ρ_pow2 ρ_res : EcPoint F) : Prop :=
+def spec_ec_mul_inner (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint mem) (scalar m ρ_range_check_ptr : F) (ρ_pow2 ρ_res : EcPoint mem) : Prop :=
    ∀ (secpF : Type) [hsecp : secp_field secpF],
    by exactI
       point.x ≠ ⟨0, 0, 0⟩ →
@@ -1242,10 +1266,10 @@ def spec_ec_mul_inner (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : 
 /- ec_mul_inner autogenerated specification -/
 
 -- Do not change this definition.
-def auto_spec_ec_mul_inner (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint F) (scalar m ρ_range_check_ptr : F) (ρ_pow2 ρ_res : EcPoint F) : Prop :=
+def auto_spec_ec_mul_inner (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint mem) (scalar m ρ_range_check_ptr : F) (ρ_pow2 ρ_res : EcPoint mem) : Prop :=
   ((m = 0 ∧
     scalar = 0 ∧
-    ∃ ZERO_POINT : EcPoint F, ZERO_POINT = {
+    ∃ ZERO_POINT : EcPoint mem, ZERO_POINT = {
       x := { d0 := 0, d1 := 0, d2 := 0 },
       y := { d0 := 0, d1 := 0, d2 := 0 }
     } ∧
@@ -1254,14 +1278,14 @@ def auto_spec_ec_mul_inner (mem : F → F) (κ : ℕ) (range_check_ptr : F) (poi
     ρ_pow2 = point ∧
     ρ_res = ZERO_POINT) ∨
    (m ≠ 0 ∧
-    ∃ (κ₁ : ℕ) (range_check_ptr₁ : F) (double_point : EcPoint F), spec_ec_double mem κ₁ range_check_ptr point range_check_ptr₁ double_point ∧
+    ∃ (κ₁ : ℕ) (range_check_ptr₁ : F) (double_point : EcPoint mem), spec_ec_double mem κ₁ range_check_ptr point range_check_ptr₁ double_point ∧
     ∃ anon_cond : F,
     ((anon_cond = 0 ∧
       ∃ (κ₂ : ℕ), spec_ec_mul_inner mem κ₂ range_check_ptr₁ double_point (scalar / (2 : ℤ)) (m - 1) ρ_range_check_ptr ρ_pow2 ρ_res ∧
       κ₁ + κ₂ + 22 ≤ κ) ∨
      (anon_cond ≠ 0 ∧
-      ∃ (κ₂ : ℕ) (range_check_ptr₂ : F) (inner_pow2 inner_res : EcPoint F), spec_ec_mul_inner mem κ₂ range_check_ptr₁ double_point ((scalar - 1) / (2 : ℤ)) (m - 1) range_check_ptr₂ inner_pow2 inner_res ∧
-      ∃ (κ₃ : ℕ) (range_check_ptr₃ : F) (res : EcPoint F), spec_fast_ec_add mem κ₃ range_check_ptr₂ point inner_res range_check_ptr₃ res ∧
+      ∃ (κ₂ : ℕ) (range_check_ptr₂ : F) (inner_pow2 inner_res : EcPoint mem), spec_ec_mul_inner mem κ₂ range_check_ptr₁ double_point ((scalar - 1) / (2 : ℤ)) (m - 1) range_check_ptr₂ inner_pow2 inner_res ∧
+      ∃ (κ₃ : ℕ) (range_check_ptr₃ : F) (res : EcPoint mem), spec_fast_ec_add mem κ₃ range_check_ptr₂ point inner_res range_check_ptr₃ res ∧
       κ₁ + κ₂ + κ₃ + 56 ≤ κ ∧
       ρ_range_check_ptr = range_check_ptr₃ ∧
       ρ_pow2 = inner_pow2 ∧
@@ -1269,16 +1293,16 @@ def auto_spec_ec_mul_inner (mem : F → F) (κ : ℕ) (range_check_ptr : F) (poi
 
 /- ec_mul_inner soundness theorem -/
 
-lemma ec_mul_inner_aux {secpF : Type} [secp_field secpF] {pt0 pt1 : EcPoint F}
+lemma ec_mul_inner_aux {mem : F → F} {secpF : Type} [secp_field secpF] {pt0 pt1 : EcPoint mem}
    (h0 : BddECPointData secpF pt0)
    (h1 : BddECPointData secpF pt1)
    (hpt0xnz : pt0.x ≠ ⟨0, 0, 0⟩)
    (hxeq : (↑h0.ix.val : secpF) = h1.ix.val) :
-  h1.toECPoint = 0 ∨ h1.toECPoint = h0.toECPoint ∨ h1.toECPoint = - h0.toECPoint :=
+  h1.toECPoint = h0.toECPoint ∨ h1.toECPoint = - h0.toECPoint :=
 begin
-  by_cases h1xz : pt1.x = ⟨0, 0, 0⟩,
-  { left, simp [BddECPointData.toECPoint, h1xz], refl },
-  right, simp [BddECPointData.toECPoint, h1xz, hpt0xnz, ECPoint.neg_def, ECPoint.neg, hxeq],
+  have h1xz : pt1.x ≠ ⟨0, 0, 0⟩,
+  { rwa [ne, h1.pt_zero_iff, ←hxeq, ←h0.pt_zero_iff] },
+  simp [BddECPointData.toECPoint, h1xz, hpt0xnz, ECPoint.neg_def, ECPoint.neg, hxeq],
   have := h0.onEC,
   simp [hxeq, hpt0xnz, ←(h1.onEC' h1xz)] at this,
   exact eq_or_eq_neg_of_sq_eq_sq _ _ this.symm
@@ -1288,7 +1312,7 @@ end
 theorem sound_ec_mul_inner
     {mem : F → F}
     (κ : ℕ)
-    (range_check_ptr : F) (point : EcPoint F) (scalar m ρ_range_check_ptr : F) (ρ_pow2 ρ_res : EcPoint F)
+    (range_check_ptr : F) (point : EcPoint mem) (scalar m ρ_range_check_ptr : F) (ρ_pow2 ρ_res : EcPoint mem)
     (h_auto : auto_spec_ec_mul_inner mem κ range_check_ptr point scalar m ρ_range_check_ptr ρ_pow2 ρ_res) :
   spec_ec_mul_inner mem κ range_check_ptr point scalar m ρ_range_check_ptr ρ_pow2 ρ_res :=
 begin
@@ -1361,12 +1385,14 @@ begin
     have := ec_mul_inner_aux hpt hinnerres ptxnez h,
     rw [hinnerreseq, hdouble_eq, smul_smul] at this,
     revert this,
-    apply secp_field.order_large,
+    apply secp_field.order_large_corr,
     { rw [ne, BddECPointData.toECPoint_eq_zero_iff],
       exact ptxnez },
-    refine lt_of_lt_of_le (nat.mul_lt_mul_of_pos_right nscalarlt (by norm_num)) _,
-    rw ←pow_succ',
-    exact nat.pow_le_pow_of_le_right (by norm_num) nn'le },
+    rw [div_eq_iff] at nscalareq,
+    apply lt_of_lt_of_le nscalarlt,
+    refine nat.pow_le_pow_of_le_right (by norm_num) nn'le',
+    simp only [int.cast_bit0, int.cast_one, ne.def],
+    exact PRIME.two_ne_zero F },
   rcases spec_fast_ec_add'_of_spec_ec_add hodd2 secpF hpt hinnerres this with ⟨hret, hreteq⟩,
   use 2 * nscalar + 1, split,
   { rw [nat.cast_add, nat.cast_mul, ←nscalareq],
@@ -1391,18 +1417,18 @@ end
 /- ec_mul autogenerated specification -/
 
 -- Do not change this definition.
-def auto_spec_ec_mul (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint F) (scalar : BigInt3 F) (ρ_range_check_ptr : F) (ρ_res : EcPoint F) : Prop :=
-  ∃ (κ₁ : ℕ) (range_check_ptr₁ : F) (pow2_0 res0 : EcPoint F), spec_ec_mul_inner mem κ₁ range_check_ptr point scalar.d0 86 range_check_ptr₁ pow2_0 res0 ∧
-  ∃ (κ₂ : ℕ) (range_check_ptr₂ : F) (pow2_1 res1 : EcPoint F), spec_ec_mul_inner mem κ₂ range_check_ptr₁ pow2_0 scalar.d1 86 range_check_ptr₂ pow2_1 res1 ∧
-  ∃ (κ₃ : ℕ) (range_check_ptr₃ : F) (ret2_0 res2 : EcPoint F), spec_ec_mul_inner mem κ₃ range_check_ptr₂ pow2_1 scalar.d2 84 range_check_ptr₃ ret2_0 res2 ∧
-  ∃ (κ₄ : ℕ) (range_check_ptr₄ : F) (res : EcPoint F), spec_ec_add mem κ₄ range_check_ptr₃ res0 res1 range_check_ptr₄ res ∧
-  ∃ (κ₅ : ℕ) (range_check_ptr₅ : F) (res₁ : EcPoint F), spec_ec_add mem κ₅ range_check_ptr₄ res res2 range_check_ptr₅ res₁ ∧
+def auto_spec_ec_mul (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint mem) (scalar : BigInt3 mem) (ρ_range_check_ptr : F) (ρ_res : EcPoint mem) : Prop :=
+  ∃ (κ₁ : ℕ) (range_check_ptr₁ : F) (pow2_0 res0 : EcPoint mem), spec_ec_mul_inner mem κ₁ range_check_ptr point scalar.d0 86 range_check_ptr₁ pow2_0 res0 ∧
+  ∃ (κ₂ : ℕ) (range_check_ptr₂ : F) (pow2_1 res1 : EcPoint mem), spec_ec_mul_inner mem κ₂ range_check_ptr₁ pow2_0 scalar.d1 86 range_check_ptr₂ pow2_1 res1 ∧
+  ∃ (κ₃ : ℕ) (range_check_ptr₃ : F) (ret2_0 res2 : EcPoint mem), spec_ec_mul_inner mem κ₃ range_check_ptr₂ pow2_1 scalar.d2 84 range_check_ptr₃ ret2_0 res2 ∧
+  ∃ (κ₄ : ℕ) (range_check_ptr₄ : F) (res : EcPoint mem), spec_ec_add mem κ₄ range_check_ptr₃ res0 res1 range_check_ptr₄ res ∧
+  ∃ (κ₅ : ℕ) (range_check_ptr₅ : F) (res₁ : EcPoint mem), spec_ec_add mem κ₅ range_check_ptr₄ res res2 range_check_ptr₅ res₁ ∧
   κ₁ + κ₂ + κ₃ + κ₄ + κ₅ + 71 ≤ κ ∧
   ρ_range_check_ptr = range_check_ptr₅ ∧
   ρ_res = res₁
 
 -- You may change anything in this definition except the name and arguments.
-def spec_ec_mul (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint F) (scalar : BigInt3 F) (ρ_range_check_ptr : F) (ρ_res : EcPoint F) : Prop :=
+def spec_ec_mul (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoint mem) (scalar : BigInt3 mem) (ρ_range_check_ptr : F) (ρ_res : EcPoint mem) : Prop :=
   ∀ (secpF : Type) [secp_field secpF], by exactI
     point.x ≠ ⟨0, 0, 0⟩ →
     ∀ hpt : BddECPointData secpF point,
@@ -1418,7 +1444,7 @@ def spec_ec_mul (mem : F → F) (κ : ℕ) (range_check_ptr : F) (point : EcPoin
 theorem sound_ec_mul
     {mem : F → F}
     (κ : ℕ)
-    (range_check_ptr : F) (point : EcPoint F) (scalar : BigInt3 F) (ρ_range_check_ptr : F) (ρ_res : EcPoint F)
+    (range_check_ptr : F) (point : EcPoint mem) (scalar : BigInt3 mem) (ρ_range_check_ptr : F) (ρ_res : EcPoint mem)
     (h_auto : auto_spec_ec_mul mem κ range_check_ptr point scalar ρ_range_check_ptr ρ_res) :
   spec_ec_mul mem κ range_check_ptr point scalar ρ_range_check_ptr ρ_res :=
 begin

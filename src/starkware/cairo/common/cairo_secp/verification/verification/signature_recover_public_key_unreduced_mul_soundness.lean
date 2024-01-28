@@ -9,7 +9,7 @@ import ..signature_recover_public_key_spec
 open tactic
 
 open starkware.cairo.common.cairo_secp.field
-open starkware.cairo.common.cairo_secp.bigint
+open starkware.cairo.common.cairo_secp.bigint3
 open starkware.cairo.common.cairo_secp.constants
 
 variables {F : Type} [field F] [decidable_eq F] [prelude_hyps F]
@@ -20,14 +20,14 @@ variable  σ : register_state F
 
 theorem auto_sound_unreduced_mul
     -- arguments
-    (a b : BigInt3 F)
+    (a b : BigInt3 mem)
     -- code is in memory at σ.pc
     (h_mem : mem_at mem code_unreduced_mul σ.pc)
     -- input arguments on the stack
     (hin_a : a = cast_BigInt3 mem (σ.fp - 8))
     (hin_b : b = cast_BigInt3 mem (σ.fp - 5))
     -- conclusion
-  : ensures_ret mem σ (λ κ τ, τ.ap = σ.ap + 17 ∧ spec_unreduced_mul mem κ a b (cast_UnreducedBigInt3 mem (τ.ap - 3))) :=
+  : ensures_ret mem σ (λ κ τ, τ.ap = σ.ap + 17 ∧ spec_unreduced_mul mem κ a b (cast_UnreducedBigInt3  mem (τ.ap - 3))) :=
 begin
   apply ensures_of_ensuresb, intro νbound,
   have h_mem_rec := h_mem,
@@ -61,8 +61,9 @@ begin
   -- prove the auto generated assertion
   dsimp [auto_spec_unreduced_mul],
   try { norm_num1 }, try { arith_simps },
-  try { split, linarith },
-  try { ensures_simps; try { simp only [add_neg_eq_sub, hin_a, hin_b] }, },
+  try { split, trivial <|> linarith },
+  try { ensures_simps; try { unfold SECP_REM }, },
+  try { simp only [add_neg_eq_sub, hin_a, hin_b] },
   try { dsimp [cast_BigInt3, cast_UnreducedBigInt3] },
   try { arith_simps }, try { simp only [hret0, hret1, hret2, hret3, hret4, hret5, hret6, hret7, hret8, hret9, hret10, hret11, hret12, hret13, hret14, hret15, hret16] },
   try { arith_simps; try { split }; triv <|> refl <|> simp <|> abel; try { norm_num } },

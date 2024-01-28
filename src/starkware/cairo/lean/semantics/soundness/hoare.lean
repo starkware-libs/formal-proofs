@@ -2,7 +2,7 @@
 Definitions and tactics for reasoning about the one-step effects of each assembly instruction.
 -/
 import starkware.cairo.lean.semantics.util
-import starkware.cairo.lean.semantics.soundness.assembly
+import starkware.cairo.lean.semantics.soundness.assembly_step
 import starkware.cairo.lean.semantics.air_encoding.instruction
 
 section main
@@ -175,6 +175,23 @@ theorem ensures_of_ensuresb {mem : F → F} {s : register_state F}
     (h : ∀ bound, ensuresb bound mem s P) :
   ensures mem s P :=
 λ n, h (n + 1) _ (nat.lt_succ_self n)
+
+theorem ensuresb_of_le {mem : F → F} {s : register_state F}
+    {P : ℕ → register_state F → Prop}
+    {bound₁ bound₂ : ℕ}
+    (h_bound : bound₂ ≤ bound₁)
+    (h : ensuresb bound₁ mem s P) :
+  ensuresb bound₂ mem s P :=
+begin
+  intros n h_n, exact h n (nat.lt_of_lt_of_le h_n h_bound)
+end
+
+theorem ensuresb_of_ensuresb {mem : F → F} {s : register_state F}
+    {P : ℕ → register_state F → Prop}
+    {bound : ℕ}
+    (h : ∀ bound₁ ≤ bound, ensuresb bound₁ mem s P) :
+  ensuresb bound mem s P :=
+h bound (le_of_eq rfl)
 
 @[reducible] def ensuresb_ret (bound : ℕ) (mem : F → F) (s : register_state F)
     (P : ℕ → register_state F → Prop) :
@@ -376,16 +393,6 @@ begin
     split, ext; simp [ht], trivial },
   apply ensuresb_step h1 h2 (λ _, h') _ nlt
 end
-
-def checked_int_nz (x : ℤ) (h0 : abs x ≠ 0) (h1 : abs x < 2^63) := x
-
-lemma checked_int_nz_eq (x : ℤ) (h0 : abs x ≠ 0) (h1 : abs x < 2^63) :
-  checked_int_nz x h0 h1 = x := rfl
-
-meta def abs_lt_tac : tactic unit :=
-`[ { rw abs_of_nonneg, norm_num, norm_num } <|> { rw abs_of_nonpos, norm_num, norm_num } ]
-
-notation `'[#nz` x `]` := checked_int_nz x (by norm_num) (by abs_lt_tac)
 
 theorem jump_ensuresb' [char_ge : char_ge_2_63 F] {bound : ℕ}
     {op0 : op0_spec} {res : res_spec} {ap_update : bool} {jump_abs : bool}
@@ -625,20 +632,8 @@ end main
 Tactics.
 -/
 
-lemma add_neg_eq_sub {G : Type*} [add_group G] (a b : G) : a + -b = a - b := by rw sub_eq_add_neg
-lemma sub_add_eq_add_neg_add {G : Type*} [add_group G] (a b c : G) :
-  a - b + c = a + (-b + c) := by rw [sub_eq_add_neg, add_assoc]
-
 namespace tactic
 setup_tactic_parser
-
-variables (F : Type*) [field F]
-
-def loc_target : loc := loc.ns [none]
-
-meta def mk_simp_arg_list : list pexpr → list simp_arg_type
-| []        := []
-| (p :: ps) := simp_arg_type.expr p :: mk_simp_arg_list ps
 
 namespace interactive
 
@@ -647,7 +642,7 @@ let cfg : simp_config_ext := {},
     simp_args := mk_simp_arg_list [
     ``(int.cast_zero), ``(int.cast_one), ``(int.cast_bit0), ``(int.cast_bit1), ``(int.cast_neg),
     ``(nat.cast_zero), ``(nat.cast_one), ``(nat.cast_bit0), ``(nat.cast_bit1),
-    ``(add_assoc), ``(add_sub_assoc), ``(add_zero), ``(add_right_neg), ``(add_left_neg),
+    ``(add_assoc), ``(add_sub_assoc), ``(add_zero), ``(zero_add), ``(add_right_neg), ``(add_left_neg),
         ``(add_neg_eq_sub), ``(sub_add_eq_add_neg_add), ``(mul_assoc)] in
 do try $ simp_core cfg.to_simp_config cfg.discharger tt simp_args [] loc >> skip,
    try $ (tactic.norm_num1 norm_num.derive.step loc >>
@@ -660,7 +655,7 @@ let cfg : simp_config_ext := {},
       ``(jump_pc), ``(clip_checked), ``(checked_int_nz_eq),
     ``(int.cast_zero), ``(int.cast_one), ``(int.cast_bit0), ``(int.cast_bit1), ``(int.cast_neg),
     ``(nat.cast_zero), ``(nat.cast_one), ``(nat.cast_bit0), ``(nat.cast_bit1),
-    ``(add_assoc), ``(add_sub_assoc), ``(add_zero), ``(add_right_neg), ``(add_left_neg),
+    ``(add_assoc), ``(add_sub_assoc), ``(add_zero), ``(zero_add), ``(add_right_neg), ``(add_left_neg),
         ``(add_neg_eq_sub), ``(sub_add_eq_add_neg_add), ``(mul_assoc)] in
 do try $ simp_core cfg.to_simp_config cfg.discharger tt simp_args [] loc >> skip,
    try (tactic.norm_num1 norm_num.derive.step loc >>

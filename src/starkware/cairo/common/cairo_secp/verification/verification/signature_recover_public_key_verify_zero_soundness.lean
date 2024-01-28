@@ -9,7 +9,7 @@ import ..signature_recover_public_key_spec
 open tactic
 
 open starkware.cairo.common.cairo_secp.field
-open starkware.cairo.common.cairo_secp.bigint
+open starkware.cairo.common.cairo_secp.bigint3
 open starkware.cairo.common.cairo_secp.constants
 
 variables {F : Type} [field F] [decidable_eq F] [prelude_hyps F]
@@ -20,7 +20,7 @@ variable  σ : register_state F
 
 theorem auto_sound_verify_zero
     -- arguments
-    (range_check_ptr : F) (val : UnreducedBigInt3 F)
+    (range_check_ptr : F) (val : UnreducedBigInt3 mem)
     -- code is in memory at σ.pc
     (h_mem : mem_at mem code_verify_zero σ.pc)
     -- input arguments on the stack
@@ -38,14 +38,12 @@ begin
   -- let (ap reference)
   apply of_register_state,
   intros regstate_q regstateeq_q,
-  generalize' hl_rev_q: mem regstate_q.ap = q,
-  have hl_q := hl_rev_q.symm,
+  mkdef  hl_q : q = mem regstate_q.ap,
   rw [regstateeq_q] at hl_q, try { dsimp at hl_q },
   -- let (ap reference)
   apply of_register_state,
   intros regstate_q_biased regstateeq_q_biased,
-  generalize' hl_rev_q_biased: mem (regstate_q_biased.ap + 1) = q_biased,
-  have hl_q_biased := hl_rev_q_biased.symm,
+  mkdef  hl_q_biased : q_biased = mem (regstate_q_biased.ap + 1),
   rw [regstateeq_q_biased] at hl_q_biased, try { dsimp at hl_q_biased },
   -- assert eq
   step_assert_eq hpc0 hpc1 with temp0,
@@ -59,7 +57,7 @@ begin
   clear temp0,
   -- assert eq
   step_assert_eq hpc2 with temp0,
-  have a2: mem (range_check_ptr) = q_biased, {
+  have a2: mem range_check_ptr = q_biased, {
     apply assert_eq_reduction temp0.symm,
     try { simp only [add_neg_eq_sub, hin_range_check_ptr, hin_val, hl_q, hl_q_biased] },
     try { dsimp [cast_UnreducedBigInt3] },
@@ -71,8 +69,7 @@ begin
   step_assert_eq hpc3 hpc4 with tv_r10,
   step_assert_eq hpc5 with tv_r11,
   step_assert_eq hpc6 hpc7 with tv_r12,
-  generalize' hl_rev_r1: ((val.d0 + q * SECP_REM) / (BASE : ℤ) : F) = r1,
-  have hl_r1 := hl_rev_r1.symm, clear hl_rev_r1,
+  mkdef hl_r1 : r1 = ((val.d0 + q * SECP_REM) / (BASE : ℤ) : F),
   have htv_r1: r1 = _, {
     have h_δ3_c0 : ∀ x : F, x / (BASE : ℤ) = x * (-46768052394588894761721767695234645457402928824320 : ℤ),
     { intro x,  apply div_eq_mul_inv', apply PRIME.int_cast_mul_eq_one, rw [PRIME], try { simp_int_casts }, norm_num1 },
@@ -99,8 +96,7 @@ begin
   -- tempvar
   step_assert_eq hpc11 with tv_r20,
   step_assert_eq hpc12 hpc13 with tv_r21,
-  generalize' hl_rev_r2: ((val.d1 + r1) / (BASE : ℤ) : F) = r2,
-  have hl_r2 := hl_rev_r2.symm, clear hl_rev_r2,
+  mkdef hl_r2 : r2 = ((val.d1 + r1) / (BASE : ℤ) : F),
   have htv_r2: r2 = _, {
     have h_δ11_c0 : ∀ x : F, x / (BASE : ℤ) = x * (-46768052394588894761721767695234645457402928824320 : ℤ),
     { intro x,  apply div_eq_mul_inv', apply PRIME.int_cast_mul_eq_one, rw [PRIME], try { simp_int_casts }, norm_num1 },
@@ -142,8 +138,7 @@ begin
   try { dsimp at a17 }, try { arith_simps at a17 },
   clear temp0 temp1,
   -- let
-  generalize' hl_rev_range_check_ptr₁: (range_check_ptr + 3 : F) = range_check_ptr₁,
-  have hl_range_check_ptr₁ := hl_rev_range_check_ptr₁.symm, clear hl_rev_range_check_ptr₁,
+  mkdef hl_range_check_ptr₁ : range_check_ptr₁ = (range_check_ptr + 3 : F),
   try { dsimp at hl_range_check_ptr₁ }, try { arith_simps at hl_range_check_ptr₁ },
   -- return
   step_assert_eq hpc20 hpc21 with hret0,
@@ -155,8 +150,8 @@ begin
   use_only (3+0+0), split,
   linarith [],
   split,
-  { arith_simps, try { simp only [hret0] },
-    try { arith_simps, refl <|> norm_cast }, try { refl } },
+  { try { norm_num1 }, arith_simps, try { simp only [hret0] },
+    try { ring_nf }, try { arith_simps, refl <|> norm_cast }, try { refl } },
   intro rc_h_range_check_ptr, repeat { rw [add_assoc] at rc_h_range_check_ptr },
   have rc_h_range_check_ptr' := range_checked_add_right rc_h_range_check_ptr,
   -- Final Proof
@@ -173,18 +168,22 @@ begin
   cases rc_h_range_check_ptr' (0) (by norm_num1) with n hn, arith_simps at hn,
   use_only [n], { simp only [a2.symm, hin_range_check_ptr], arith_simps, exact hn },
   use_only [r1, hl_r1],
+  try { dsimp }, try { arith_simps },
   use_only [a8],
   cases rc_h_range_check_ptr' (1) (by norm_num1) with n hn, arith_simps at hn,
   use_only [n], { simp only [a8.symm, hin_range_check_ptr], arith_simps, exact hn },
   use_only [r2, hl_r2],
+  try { dsimp }, try { arith_simps },
   use_only [a14],
   cases rc_h_range_check_ptr' (2) (by norm_num1) with n hn, arith_simps at hn,
   use_only [n], { simp only [a14.symm, hin_range_check_ptr], arith_simps, exact hn },
   use_only [a17],
   have rc_h_range_check_ptr₁ := range_checked_offset' rc_h_range_check_ptr,
-  have rc_h_range_check_ptr₁' := range_checked_add_right rc_h_range_check_ptr₁,try { norm_cast at rc_h_range_check_ptr₁' },
+  have rc_h_range_check_ptr₁' := range_checked_add_right rc_h_range_check_ptr₁,
+    try { norm_cast at rc_h_range_check_ptr₁' }, try { rw [add_zero] at rc_h_range_check_ptr₁' },
   use_only [range_check_ptr₁, hl_range_check_ptr₁],
-  try { split, linarith },
+  try { dsimp }, try { arith_simps },
+  try { split, trivial <|> linarith },
   try { ensures_simps; try { simp only [add_neg_eq_sub, hin_range_check_ptr, hin_val, hl_q, hl_q_biased, hl_r1, htv_r1, hl_r2, htv_r2, hl_range_check_ptr₁] }, },
   try { dsimp [cast_UnreducedBigInt3] },
   try { arith_simps }, try { simp only [hret0] },

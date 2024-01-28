@@ -9,6 +9,7 @@ import ..signature_recover_public_key_spec
 open tactic
 
 open starkware.cairo.common.cairo_secp.bigint
+open starkware.cairo.common.cairo_secp.bigint3
 
 variables {F : Type} [field F] [decidable_eq F] [prelude_hyps F]
 variable  mem : F → F
@@ -18,14 +19,14 @@ variable  σ : register_state F
 
 theorem auto_sound_bigint_mul
     -- arguments
-    (x y : BigInt3 F)
+    (x y : BigInt3 mem)
     -- code is in memory at σ.pc
     (h_mem : mem_at mem code_bigint_mul σ.pc)
     -- input arguments on the stack
     (hin_x : x = cast_BigInt3 mem (σ.fp - 8))
     (hin_y : y = cast_BigInt3 mem (σ.fp - 5))
     -- conclusion
-  : ensures_ret mem σ (λ κ τ, τ.ap = σ.ap + 13 ∧ spec_bigint_mul mem κ x y (cast_UnreducedBigInt5 mem (τ.ap - 5))) :=
+  : ensures_ret mem σ (λ κ τ, τ.ap = σ.ap + 13 ∧ spec_bigint_mul mem κ x y (cast_UnreducedBigInt5  mem (τ.ap - 5))) :=
 begin
   apply ensures_of_ensuresb, intro νbound,
   have h_mem_rec := h_mem,
@@ -55,7 +56,7 @@ begin
   -- prove the auto generated assertion
   dsimp [auto_spec_bigint_mul],
   try { norm_num1 }, try { arith_simps },
-  try { split, linarith },
+  try { split, trivial <|> linarith },
   try { ensures_simps; try { simp only [add_neg_eq_sub, hin_x, hin_y] }, },
   try { dsimp [cast_BigInt3, cast_UnreducedBigInt5] },
   try { arith_simps }, try { simp only [hret0, hret1, hret2, hret3, hret4, hret5, hret6, hret7, hret8, hret9, hret10, hret11, hret12] },

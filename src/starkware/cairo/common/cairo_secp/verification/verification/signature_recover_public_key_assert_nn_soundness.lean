@@ -35,7 +35,7 @@ begin
   unpack_memory code_assert_nn at h_mem with ⟨hpc0, hpc1, hpc2, hpc3⟩,
   -- assert eq
   step_assert_eq hpc0 with temp0,
-  have a0: a = mem (range_check_ptr), {
+  have a0: a = mem range_check_ptr, {
     apply assert_eq_reduction temp0,
     try { simp only [add_neg_eq_sub, hin_range_check_ptr, hin_a] },
     try { arith_simps; try { split }; triv <|> refl <|> simp <|> abel; try { norm_num } },
@@ -43,8 +43,7 @@ begin
   try { dsimp at a0 }, try { arith_simps at a0 },
   clear temp0,
   -- let
-  generalize' hl_rev_range_check_ptr₁: (range_check_ptr + 1 : F) = range_check_ptr₁,
-  have hl_range_check_ptr₁ := hl_rev_range_check_ptr₁.symm, clear hl_rev_range_check_ptr₁,
+  mkdef hl_range_check_ptr₁ : range_check_ptr₁ = (range_check_ptr + 1 : F),
   try { dsimp at hl_range_check_ptr₁ }, try { arith_simps at hl_range_check_ptr₁ },
   -- return
   step_assert_eq hpc1 hpc2 with hret0,
@@ -56,8 +55,8 @@ begin
   use_only (1+0+0), split,
   linarith [],
   split,
-  { arith_simps, try { simp only [hret0] },
-    try { arith_simps, refl <|> norm_cast }, try { refl } },
+  { try { norm_num1 }, arith_simps, try { simp only [hret0] },
+    try { ring_nf }, try { arith_simps, refl <|> norm_cast }, try { refl } },
   intro rc_h_range_check_ptr, repeat { rw [add_assoc] at rc_h_range_check_ptr },
   have rc_h_range_check_ptr' := range_checked_add_right rc_h_range_check_ptr,
   -- Final Proof
@@ -71,9 +70,11 @@ begin
   cases rc_h_range_check_ptr' (0) (by norm_num1) with n hn, arith_simps at hn,
   use_only [n], { simp only [a0, hin_range_check_ptr], arith_simps, exact hn },
   have rc_h_range_check_ptr₁ := range_checked_offset' rc_h_range_check_ptr,
-  have rc_h_range_check_ptr₁' := range_checked_add_right rc_h_range_check_ptr₁,try { norm_cast at rc_h_range_check_ptr₁' },
+  have rc_h_range_check_ptr₁' := range_checked_add_right rc_h_range_check_ptr₁,
+    try { norm_cast at rc_h_range_check_ptr₁' }, try { rw [add_zero] at rc_h_range_check_ptr₁' },
   use_only [range_check_ptr₁, hl_range_check_ptr₁],
-  try { split, linarith },
+  try { dsimp }, try { arith_simps },
+  try { split, trivial <|> linarith },
   try { ensures_simps; try { simp only [add_neg_eq_sub, hin_range_check_ptr, hin_a, hl_range_check_ptr₁] }, },
   try { arith_simps }, try { simp only [hret0] },
   try { arith_simps; try { split }; triv <|> refl <|> simp <|> abel; try { norm_num } },

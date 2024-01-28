@@ -64,6 +64,12 @@ begin
   apply PRIME.nat_coe_field_inj h_lt _ h_zero, rw [PRIME], norm_num1,
 end
 
+lemma nat_coe_field_ne_zero {x : F} {n : ℕ} (h_lt : n < PRIME) (h_cast: x = ↑n): n ≠ 0 → x ≠ 0 :=
+begin
+  intros h_ne_zero h_x_eq,
+  exact h_ne_zero (nat_coe_field_zero h_lt h_cast h_x_eq),
+end
+
 lemma nat_cast_mul_eq_one {m n : ℕ} (h : m * n % PRIME = 1) :
   ↑m * ↑n = (1 : F) :=
 begin
