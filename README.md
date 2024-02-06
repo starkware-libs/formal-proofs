@@ -92,6 +92,9 @@ and install from that:
 ```
   pip install cairo-lang-0.10.1.zip
 ```
+Note that most of the verification files in this repository correspond to Cairo version `v.0.13.1`
+and were generated with a newer version of the verifier. So this version should only be used on
+the examples from `v.0.10.1`, as described in the instructions below.
 
 
 Usage
@@ -108,7 +111,13 @@ specifications produced by the verifier, run
 ```
   lean --make *.lean
 ```
-in [src/starkware/cairo/common](src/starkware/cairo/common).
+in [src/starkware/cairo/common](src/starkware/cairo/common). For a complete verification of the
+correctness of the compiled code for `squash_dict` with respect to the CPU execution semantics,
+run
+```
+  lean --make *.lean
+```
+in [src/starkware/cairo/common/verification](src/starkware/cairo/common/verification/).
 
 To verify the correctness of the Secp256k1 signature validation procedures relative
 to the specifications produced by the verifier, run
@@ -121,15 +130,23 @@ run
 ```
   lean --make *.lean
 ```
-in [src/starkware/cairo/common/cairo_secp/verification/verification](src/starkware/cairo/common/cairo_secp/verification/verification). You will get warnings that the file `elliptic_curves.lean`
-uses `sorry`. That refers to the associativity of the elliptic curve law, which we assert without
-proof.
+in [src/starkware/cairo/common/cairo_secp/verification/verification](src/starkware/cairo/common/cairo_secp/verification/verification).
+You will get warnings that the file `elliptic_curves.lean` uses `sorry`. That refers to the
+associativity of the elliptic curve law, which we assert without proof.
 
 To verify the correctness of the Cairo Secp256r1 operations relative to the specifications produced by the verifier, run
 ```
   lean --make ec_spec.lean
 ```
-in [src/starkware/cairo/common/secp256r1](src/starkware/cairo/common/secp256r1).
+in [src/starkware/cairo/common/secp256r1](src/starkware/cairo/common/secp256r1). For a complete
+verification of the correctness of the compiled code with respect to the CPU execution semantics,
+run
+```
+  lean --make *.lean
+```
+in [src/starkware/cairo/common/secp256r1/verification](src/starkware/cairo/common/secp256r1/verification).
+You will get warnings that the file `elliptic_curves.lean` uses `sorry`. That refers to the
+associativity of the elliptic curve law, which we assert without proof.
 
 To try out the verifier, follow the instructions in the
 [README](src/starkware/cairo/lean/verification/examples/math/README.md) file in
