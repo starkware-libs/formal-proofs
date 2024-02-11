@@ -73,6 +73,17 @@ Publications
 - Our verification tools and our verification of Cairo code used to validate cryptographic signatures
   are described in the paper [A proof-producing compiler for blockchain applications](https://doi.org/10.4230/LIPIcs.ITP.2023.7).
 
+What's New
+----------
+
+Here are some things that are new and not covered in the publications:
+
+- We have verified more procedures in the Cairo 0 common library, such as the `squash_dict()`
+  procedure.
+
+- We have verified the correctness of elliptic curve operations for the Secp256r1 elliptic curve
+  that are used in Cairo 1.
+
 
 Setup
 -----
