@@ -53,6 +53,17 @@ This repository contains a number of related items.
   instructions in the [README](lean4/README.md) file there to use them. Our verification
   infrastructure for Lean 4 is still a work in progress and these files may change.
 
+All the Cairo specifications correspond to code in the `cairo-v0.13.1` libraries. The default
+specification files and the end-to-end soundness proof were all generated automatically by the
+verifier. Two manual modifications were needed: the constants `SECP_REM*`, `BETA*`,
+`BASE3_MOD*`, and `BASE4_MOD*` in `secp256r1/constants_spec.lean` were manually typed as integers
+rather than natural numbers, and the final part of the soundness proof in
+`secp256r1/verification/ec_alloc_soundness.lean` was replaced by `trivial`.
+
+The `cairo-v0.13.1` verifier, however, has not yet been made public. The verifier and the examples
+in that directory correspond to `cairo-v0.10.1`.
+
+
 Publications
 ------------
 
@@ -92,9 +103,9 @@ and install from that:
 ```
   pip install cairo-lang-0.10.1.zip
 ```
-Note that most of the verification files in this repository correspond to Cairo version `v.0.13.1`
-and were generated with a newer version of the verifier. So this version should only be used on
-the examples from `v.0.10.1`, as described in the instructions below.
+Note that most of the verification files in this repository correspond to Cairo version `v0.13.1`
+and were generated with a newer version of the verifier. So this version of the verifier should only
+be used on the examples from `v0.10.1`, as described in the instructions below.
 
 
 Usage
@@ -148,7 +159,7 @@ in [src/starkware/cairo/common/secp256r1/verification](src/starkware/cairo/commo
 You will get warnings that the file `elliptic_curves.lean` uses `sorry`. That refers to the
 associativity of the elliptic curve law, which we assert without proof.
 
-To try out the verifier, follow the instructions in the
+To try out an older version of the verifier, follow the instructions in the
 [README](src/starkware/cairo/lean/verification/examples/math/README.md) file in
 [src/starkware/cairo/lean/verification/examples/math](src/starkware/cairo/lean/verification/examples/math).
 

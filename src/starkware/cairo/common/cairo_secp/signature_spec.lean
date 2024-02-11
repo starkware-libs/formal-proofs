@@ -14,11 +14,11 @@ import starkware.cairo.common.cairo_secp.constants_spec
 import starkware.cairo.common.cairo_secp.field_spec
 import starkware.cairo.common.math_spec
 
-import starkware.cairo.common.cairo_secp.bigint3_spec
 import starkware.cairo.common.cairo_secp.ec_point_spec
+import starkware.cairo.common.cairo_secp.bigint3_spec
 
-open starkware.cairo.common.cairo_secp.bigint3
 open starkware.cairo.common.cairo_secp.ec_point
+open starkware.cairo.common.cairo_secp.bigint3
 open starkware.cairo.common.cairo_secp.ec
 open starkware.cairo.common.cairo_secp.bigint
 open starkware.cairo.common.cairo_secp.constants

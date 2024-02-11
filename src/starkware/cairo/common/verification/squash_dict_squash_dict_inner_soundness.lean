@@ -10,8 +10,8 @@ import .squash_dict_assert_lt_felt_soundness
 open tactic
 
 open starkware.cairo.common.squash_dict
-open starkware.cairo.common.dict_access
 open starkware.cairo.common.math
+open starkware.cairo.common.dict_access
 
 variables {F : Type} [field F] [decidable_eq F] [prelude_hyps F]
 variable  mem : F → F
@@ -751,7 +751,7 @@ begin
   have a15: loop_temps.index_delta_minus1 = mem prev_loop_locals.range_check_ptr, {
     apply assert_eq_reduction temp0,
     try { simp only [add_neg_eq_sub, hin_range_check_ptr, hin_dict_accesses, hin_dict_accesses_end_minus1, hin_key, hin_remaining_accesses, hin_squashed_dict, hin_big_keys, hin_dict_diff, hin_first_value, hin_should_skip_loop, hl_prev_loop_locals, hl_loop_temps, hl_loop_locals] },
-    try { simp only [squash_dict_inner.eq_LoopTemps_π_cast, squash_dict_inner.coe_LoopTemps_π_cast, eq_DictAccess_π_cast, coe_DictAccess_π_cast, squash_dict_inner.eq_LoopLocals_π_cast, squash_dict_inner.coe_LoopLocals_π_cast] },
+    try { simp only [eq_DictAccess_π_cast, coe_DictAccess_π_cast, squash_dict_inner.eq_LoopLocals_π_cast, squash_dict_inner.coe_LoopLocals_π_cast, squash_dict_inner.eq_LoopTemps_π_cast, squash_dict_inner.coe_LoopTemps_π_cast] },
     try { dsimp [cast_π_DictAccess, squash_dict_inner.cast_π_LoopLocals, squash_dict_inner.cast_π_LoopTemps] },
     try { arith_simps; try { split }; triv <|> refl <|> simp <|> abel; try { norm_num } },
   },
@@ -762,7 +762,7 @@ begin
   have a16: loop_temps.index_delta = loop_temps.index_delta_minus1 + 1, {
     apply assert_eq_reduction temp0,
     try { simp only [add_neg_eq_sub, hin_range_check_ptr, hin_dict_accesses, hin_dict_accesses_end_minus1, hin_key, hin_remaining_accesses, hin_squashed_dict, hin_big_keys, hin_dict_diff, hin_first_value, hin_should_skip_loop, hl_prev_loop_locals, hl_loop_temps, hl_loop_locals] },
-    try { simp only [squash_dict_inner.eq_LoopTemps_π_cast, squash_dict_inner.coe_LoopTemps_π_cast, eq_DictAccess_π_cast, coe_DictAccess_π_cast, squash_dict_inner.eq_LoopLocals_π_cast, squash_dict_inner.coe_LoopLocals_π_cast] },
+    try { simp only [eq_DictAccess_π_cast, coe_DictAccess_π_cast, squash_dict_inner.eq_LoopLocals_π_cast, squash_dict_inner.coe_LoopLocals_π_cast, squash_dict_inner.eq_LoopTemps_π_cast, squash_dict_inner.coe_LoopTemps_π_cast] },
     try { dsimp [cast_π_DictAccess, squash_dict_inner.cast_π_LoopLocals, squash_dict_inner.cast_π_LoopTemps] },
     try { arith_simps; try { split }; triv <|> refl <|> simp <|> abel; try { norm_num } },
   },
@@ -773,7 +773,7 @@ begin
   have a18: loop_temps.ptr_delta = loop_temps.index_delta * DictAccess.SIZE, {
     apply assert_eq_reduction temp0,
     try { simp only [add_neg_eq_sub, hin_range_check_ptr, hin_dict_accesses, hin_dict_accesses_end_minus1, hin_key, hin_remaining_accesses, hin_squashed_dict, hin_big_keys, hin_dict_diff, hin_first_value, hin_should_skip_loop, hl_prev_loop_locals, hl_loop_temps, hl_loop_locals] },
-    try { simp only [squash_dict_inner.eq_LoopTemps_π_cast, squash_dict_inner.coe_LoopTemps_π_cast, eq_DictAccess_π_cast, coe_DictAccess_π_cast, squash_dict_inner.eq_LoopLocals_π_cast, squash_dict_inner.coe_LoopLocals_π_cast] },
+    try { simp only [eq_DictAccess_π_cast, coe_DictAccess_π_cast, squash_dict_inner.eq_LoopLocals_π_cast, squash_dict_inner.coe_LoopLocals_π_cast, squash_dict_inner.eq_LoopTemps_π_cast, squash_dict_inner.coe_LoopTemps_π_cast] },
     try { dsimp [cast_π_DictAccess, squash_dict_inner.cast_π_LoopLocals, squash_dict_inner.cast_π_LoopTemps] },
     try { arith_simps; try { split }; triv <|> refl <|> simp <|> abel; try { norm_num } },
   },
@@ -785,7 +785,7 @@ begin
     try { apply eq_DictAccess_ptr },
     apply assert_eq_reduction temp0,
     try { simp only [add_neg_eq_sub, hin_range_check_ptr, hin_dict_accesses, hin_dict_accesses_end_minus1, hin_key, hin_remaining_accesses, hin_squashed_dict, hin_big_keys, hin_dict_diff, hin_first_value, hin_should_skip_loop, hl_prev_loop_locals, hl_loop_temps, hl_loop_locals] },
-    try { simp only [squash_dict_inner.eq_LoopTemps_π_cast, squash_dict_inner.coe_LoopTemps_π_cast, eq_DictAccess_π_cast, coe_DictAccess_π_cast, squash_dict_inner.eq_LoopLocals_π_cast, squash_dict_inner.coe_LoopLocals_π_cast] },
+    try { simp only [eq_DictAccess_π_cast, coe_DictAccess_π_cast, squash_dict_inner.eq_LoopLocals_π_cast, squash_dict_inner.coe_LoopLocals_π_cast, squash_dict_inner.eq_LoopTemps_π_cast, squash_dict_inner.coe_LoopTemps_π_cast] },
     try { dsimp [cast_π_DictAccess, squash_dict_inner.cast_π_LoopLocals, squash_dict_inner.cast_π_LoopTemps] },
     try { arith_simps; try { split }; triv <|> refl <|> simp <|> abel; try { norm_num } },
   },
@@ -799,7 +799,7 @@ begin
   have a21: prev_loop_locals.value = access.prev_value, {
     apply assert_eq_reduction temp0,
     try { simp only [add_neg_eq_sub, hin_range_check_ptr, hin_dict_accesses, hin_dict_accesses_end_minus1, hin_key, hin_remaining_accesses, hin_squashed_dict, hin_big_keys, hin_dict_diff, hin_first_value, hin_should_skip_loop, hl_prev_loop_locals, hl_loop_temps, hl_loop_locals, hl_access] },
-    try { simp only [squash_dict_inner.eq_LoopTemps_π_cast, squash_dict_inner.coe_LoopTemps_π_cast, eq_DictAccess_π_cast, coe_DictAccess_π_cast, squash_dict_inner.eq_LoopLocals_π_cast, squash_dict_inner.coe_LoopLocals_π_cast] },
+    try { simp only [eq_DictAccess_π_cast, coe_DictAccess_π_cast, squash_dict_inner.eq_LoopLocals_π_cast, squash_dict_inner.coe_LoopLocals_π_cast, squash_dict_inner.eq_LoopTemps_π_cast, squash_dict_inner.coe_LoopTemps_π_cast] },
     try { dsimp [cast_π_DictAccess, squash_dict_inner.cast_π_LoopLocals, squash_dict_inner.cast_π_LoopTemps] },
     try { arith_simps; try { split }; triv <|> refl <|> simp <|> abel; try { norm_num } },
   },
@@ -810,7 +810,7 @@ begin
   have a22: loop_locals.value = access.new_value, {
     apply assert_eq_reduction temp0,
     try { simp only [add_neg_eq_sub, hin_range_check_ptr, hin_dict_accesses, hin_dict_accesses_end_minus1, hin_key, hin_remaining_accesses, hin_squashed_dict, hin_big_keys, hin_dict_diff, hin_first_value, hin_should_skip_loop, hl_prev_loop_locals, hl_loop_temps, hl_loop_locals, hl_access] },
-    try { simp only [squash_dict_inner.eq_LoopTemps_π_cast, squash_dict_inner.coe_LoopTemps_π_cast, eq_DictAccess_π_cast, coe_DictAccess_π_cast, squash_dict_inner.eq_LoopLocals_π_cast, squash_dict_inner.coe_LoopLocals_π_cast] },
+    try { simp only [eq_DictAccess_π_cast, coe_DictAccess_π_cast, squash_dict_inner.eq_LoopLocals_π_cast, squash_dict_inner.coe_LoopLocals_π_cast, squash_dict_inner.eq_LoopTemps_π_cast, squash_dict_inner.coe_LoopTemps_π_cast] },
     try { dsimp [cast_π_DictAccess, squash_dict_inner.cast_π_LoopLocals, squash_dict_inner.cast_π_LoopTemps] },
     try { arith_simps; try { split }; triv <|> refl <|> simp <|> abel; try { norm_num } },
   },
@@ -821,7 +821,7 @@ begin
   have a23: key = access.key, {
     apply assert_eq_reduction temp0,
     try { simp only [add_neg_eq_sub, hin_range_check_ptr, hin_dict_accesses, hin_dict_accesses_end_minus1, hin_key, hin_remaining_accesses, hin_squashed_dict, hin_big_keys, hin_dict_diff, hin_first_value, hin_should_skip_loop, hl_prev_loop_locals, hl_loop_temps, hl_loop_locals, hl_access] },
-    try { simp only [squash_dict_inner.eq_LoopTemps_π_cast, squash_dict_inner.coe_LoopTemps_π_cast, eq_DictAccess_π_cast, coe_DictAccess_π_cast, squash_dict_inner.eq_LoopLocals_π_cast, squash_dict_inner.coe_LoopLocals_π_cast] },
+    try { simp only [eq_DictAccess_π_cast, coe_DictAccess_π_cast, squash_dict_inner.eq_LoopLocals_π_cast, squash_dict_inner.coe_LoopLocals_π_cast, squash_dict_inner.eq_LoopTemps_π_cast, squash_dict_inner.coe_LoopTemps_π_cast] },
     try { dsimp [cast_π_DictAccess, squash_dict_inner.cast_π_LoopLocals, squash_dict_inner.cast_π_LoopTemps] },
     try { arith_simps; try { split }; triv <|> refl <|> simp <|> abel; try { norm_num } },
   },
@@ -832,7 +832,7 @@ begin
   have a24: loop_locals.range_check_ptr = prev_loop_locals.range_check_ptr + 1, {
     apply assert_eq_reduction temp0,
     try { simp only [add_neg_eq_sub, hin_range_check_ptr, hin_dict_accesses, hin_dict_accesses_end_minus1, hin_key, hin_remaining_accesses, hin_squashed_dict, hin_big_keys, hin_dict_diff, hin_first_value, hin_should_skip_loop, hl_prev_loop_locals, hl_loop_temps, hl_loop_locals, hl_access] },
-    try { simp only [squash_dict_inner.eq_LoopTemps_π_cast, squash_dict_inner.coe_LoopTemps_π_cast, eq_DictAccess_π_cast, coe_DictAccess_π_cast, squash_dict_inner.eq_LoopLocals_π_cast, squash_dict_inner.coe_LoopLocals_π_cast] },
+    try { simp only [eq_DictAccess_π_cast, coe_DictAccess_π_cast, squash_dict_inner.eq_LoopLocals_π_cast, squash_dict_inner.coe_LoopLocals_π_cast, squash_dict_inner.eq_LoopTemps_π_cast, squash_dict_inner.coe_LoopTemps_π_cast] },
     try { dsimp [cast_π_DictAccess, squash_dict_inner.cast_π_LoopLocals, squash_dict_inner.cast_π_LoopTemps] },
     try { arith_simps; try { split }; triv <|> refl <|> simp <|> abel; try { norm_num } },
   },
@@ -844,7 +844,7 @@ begin
     -- jnz: positive branch
     have a26 : loop_temps.should_continue = 0, {
       try { simp only [add_neg_eq_sub, hin_range_check_ptr, hin_dict_accesses, hin_dict_accesses_end_minus1, hin_key, hin_remaining_accesses, hin_squashed_dict, hin_big_keys, hin_dict_diff, hin_first_value, hin_should_skip_loop, hl_prev_loop_locals, hl_loop_temps, hl_loop_locals, hl_access] },
-      try { simp only [squash_dict_inner.eq_LoopTemps_π_cast, squash_dict_inner.coe_LoopTemps_π_cast, eq_DictAccess_π_cast, coe_DictAccess_π_cast, squash_dict_inner.eq_LoopLocals_π_cast, squash_dict_inner.coe_LoopLocals_π_cast] },
+      try { simp only [eq_DictAccess_π_cast, coe_DictAccess_π_cast, squash_dict_inner.eq_LoopLocals_π_cast, squash_dict_inner.coe_LoopLocals_π_cast, squash_dict_inner.eq_LoopTemps_π_cast, squash_dict_inner.coe_LoopTemps_π_cast] },
       try { dsimp [cast_π_DictAccess, squash_dict_inner.cast_π_LoopLocals, squash_dict_inner.cast_π_LoopTemps] },
       try { arith_simps }, try { simp only [hcond] },
       try { arith_simps; try { split }; triv <|> refl <|> simp <|> abel; try { norm_num } },
@@ -907,7 +907,7 @@ begin
     have a26 : loop_temps.should_continue ≠ 0, {
       try { simp only [ne.def] },
       try { simp only [add_neg_eq_sub, hin_range_check_ptr, hin_dict_accesses, hin_dict_accesses_end_minus1, hin_key, hin_remaining_accesses, hin_squashed_dict, hin_big_keys, hin_dict_diff, hin_first_value, hin_should_skip_loop, hl_prev_loop_locals, hl_loop_temps, hl_loop_locals, hl_access] },
-      try { simp only [squash_dict_inner.eq_LoopTemps_π_cast, squash_dict_inner.coe_LoopTemps_π_cast, eq_DictAccess_π_cast, coe_DictAccess_π_cast, squash_dict_inner.eq_LoopLocals_π_cast, squash_dict_inner.coe_LoopLocals_π_cast] },
+      try { simp only [eq_DictAccess_π_cast, coe_DictAccess_π_cast, squash_dict_inner.eq_LoopLocals_π_cast, squash_dict_inner.coe_LoopLocals_π_cast, squash_dict_inner.eq_LoopTemps_π_cast, squash_dict_inner.coe_LoopTemps_π_cast] },
       try { dsimp [cast_π_DictAccess, squash_dict_inner.cast_π_LoopLocals, squash_dict_inner.cast_π_LoopTemps] },
       try { arith_simps }, try { simp only [hcond] },
       try { arith_simps; try { split }; triv <|> refl <|> simp <|> abel; try { norm_num } },

@@ -10,9 +10,9 @@ import .ec_assert_nn_le_soundness
 open tactic
 
 open starkware.cairo.common.secp256r1.field
-open starkware.cairo.common.math
 open starkware.cairo.common.cairo_secp.bigint3
 open starkware.cairo.common.secp256r1.constants
+open starkware.cairo.common.math
 
 variables {F : Type} [field F] [decidable_eq F] [prelude_hyps F]
 variable  mem : F → F

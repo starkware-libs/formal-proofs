@@ -10,10 +10,10 @@ import .ec_compute_doubling_slope_soundness
 open tactic
 
 open starkware.cairo.common.secp256r1.ec
-open starkware.cairo.common.secp256r1.bigint
 open starkware.cairo.common.cairo_secp.bigint3
-open starkware.cairo.common.cairo_secp.ec_point
 open starkware.cairo.common.secp256r1.field
+open starkware.cairo.common.cairo_secp.ec_point
+open starkware.cairo.common.secp256r1.bigint
 
 variables {F : Type} [field F] [decidable_eq F] [prelude_hyps F]
 variable  mem : F → F

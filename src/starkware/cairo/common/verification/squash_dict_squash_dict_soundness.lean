@@ -10,8 +10,8 @@ import .squash_dict_squash_dict_inner_soundness
 open tactic
 
 open starkware.cairo.common.squash_dict
-open starkware.cairo.common.dict_access
 open starkware.cairo.common.math
+open starkware.cairo.common.dict_access
 
 variables {F : Type} [field F] [decidable_eq F] [prelude_hyps F]
 variable  mem : F → F
@@ -102,7 +102,6 @@ begin
   mkdef htv_range_check_ptr₁ : range_check_ptr₁ = (mem (ap27 - 2)),
   simp only [←htv_range_check_ptr₁] at h_call27,
   mkdef htv_squashed_dict₁ : squashed_dict₁ = (cast_π_DictAccess mem (mem (ap27 - 1))),
-  rw [eq_DictAccess_π_ptr_cast] at htv_squashed_dict₁,
   simp only [←htv_squashed_dict₁] at h_call27,
   try { simp only [arg0 ,arg1 ,arg2 ,arg3 ,arg4 ,arg5] at hl_range_check_ptr₁ },
   try { rw [←htv_range_check_ptr₁] at hl_range_check_ptr₁ }, try { rw [←hin_range_check_ptr] at hl_range_check_ptr₁ },
@@ -135,14 +134,10 @@ begin
   try { dsimp at spec27, arith_simps at spec27 },
   use_only [spec27],
   try { split, trivial <|> linarith },
-  split, rw [htv_range_check_ptr₁],
-  -- TODO(Jeremy): these two lines done manually.
-  rw [←htv_squashed_dict₁],
-  apply coe_cast_π_DictAccess,
-  -- try { ensures_simps; try { simp only [add_neg_eq_sub, hin_range_check_ptr, hin_dict_accesses, hin_dict_accesses_end, hin_squashed_dict, hin_ptr_diff, hin_first_key, hin_big_keys, hin_n_accesses, htv_range_check_ptr₁, htv_squashed_dict₁] }, },
-  -- try { simp only [eq_DictAccess_π_cast, coe_DictAccess_π_cast] },
-  -- try { dsimp [cast_π_DictAccess] },
-  -- try { arith_simps; try { split }; triv <|> refl <|> simp <|> abel; try { norm_num } },
+  try { ensures_simps; try { simp only [add_neg_eq_sub, hin_range_check_ptr, hin_dict_accesses, hin_dict_accesses_end, hin_squashed_dict, hin_ptr_diff, hin_first_key, hin_big_keys, hin_n_accesses, htv_range_check_ptr₁, htv_squashed_dict₁] }, },
+  try { simp only [eq_DictAccess_π_cast, coe_DictAccess_π_cast] },
+  try { dsimp [cast_π_DictAccess] },
+  try { arith_simps; try { split }; triv <|> refl <|> simp <|> abel; try { norm_num } },
 end
 
 theorem auto_sound_squash_dict

@@ -63,14 +63,11 @@ begin
   apply iff.intro, intro h, cases h, refl, intro h, ext, rw [←h]
 end
 lemma coe_DictAccess_π_cast {mem : F → F} {x : F} :(↑(cast_π_DictAccess mem x) : F) = x := rfl
-
 -- End of automatically generated lemmas
-
 lemma coe_cast_π_DictAccess {mem : F → F} { x : π_DictAccess mem } : cast_π_DictAccess mem ↑x = x :=
 begin
   apply eq_DictAccess_ptr, dsimp [cast_π_DictAccess], refl,
 end
-
 instance decidable_eq_π_DictAccess {mem : F → F} : decidable_eq (π_DictAccess mem)
 := by tactic.mk_dec_eq_instance
 
