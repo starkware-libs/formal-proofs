@@ -100,8 +100,8 @@ begin
   dsimp [int.modeq] at mul_eq,
   rw [←mul_eq] at h, norm_cast at h,
   -- convert the goal
-  have m_eq := (char_p.int_coe_eq_int_coe_iff F PRIME m mn).mpr h_mn_eq.symm,
-  have n_eq := (char_p.int_coe_eq_int_coe_iff F PRIME n nn).mpr h_nn_eq.symm,
+  have m_eq := (char_p.int_cast_eq_int_cast F PRIME).mpr h_mn_eq.symm,
+  have n_eq := (char_p.int_cast_eq_int_cast F PRIME).mpr h_nn_eq.symm,
   norm_cast at m_eq n_eq, rw [m_eq, n_eq],
   exact nat_cast_mul_eq_one h,
 end

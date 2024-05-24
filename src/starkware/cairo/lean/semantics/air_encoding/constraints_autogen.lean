@@ -1,6 +1,6 @@
 /- This file is generated automatically by generate_constraints.py. -/
 
-import algebra.field_power
+import algebra.field.power
 
 notation `offset_size` := 2^16
 notation `half_offset_size` := 2^15

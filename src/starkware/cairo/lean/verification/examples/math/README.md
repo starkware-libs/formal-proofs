@@ -1,8 +1,22 @@
 Trying out the verifier
 =======================
 
-To use the verifier and/or Lean, follow the installation instructions in this repository's main
-README file.
+To use Lean, follow the installation instructions in this repository's main README file.
+
+To run the Cairo verifier, you need to have the Cairo compiler installed.
+The verifier here is designed to work with version `v.0.10.1`, so you should use
+```
+  pip install cairo-lang==0.10.1
+```
+to make sure you are installing the right version. Alternatively, you can download a zip file from
+the [cairo-lang](https://github.com/starkware-libs/cairo-lang/releases/tag/v0.10.1) repository
+and install from that:
+```
+  pip install cairo-lang-0.10.1.zip
+```
+Note that most of the verification files in this repository correspond to Cairo version `v0.13.1`
+and were generated with a newer version of the verifier. So this version of the verifier should only
+be used on the examples from `v0.10.1`.
 
 To run the verifier on `math.cairo`, first activate the Python environment with version v.0.10.1.
 Use the command

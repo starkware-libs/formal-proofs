@@ -72,7 +72,7 @@ def gen_point_data (F : Type) [field F] [decidable_eq F] [prelude_hyps F] (mem :
     begin
       right,
       rw [←int.cast_pow, ←int.cast_pow, (show (7 : secpF) = (7 : int), by simp_int_casts),
-        ←int.cast_add, char_p.int_coe_eq_int_coe_iff secpF SECP_PRIME, bigint3.val, bigint3.val,
+        ←int.cast_add, char_p.int_cast_eq_int_cast secpF SECP_PRIME, bigint3.val, bigint3.val,
         SECP_PRIME_eq, int.modeq, BASE, SECP_REM],
       dsimp, simp_int_casts, norm_num,
     end }
@@ -381,7 +381,7 @@ begin
   { suffices : iy'.bounded BASE,
     { apply bigint3.bounded_of_bounded_of_le this,
       rw BASE, simp_int_casts, norm_num },
-    simp only [bigint3.bounded, int.coe_nat_abs, int.coe_nat_le],
+    simp only [bigint3.bounded, nat.abs_cast, int.coe_nat_le],
     split, { apply le_trans n0le tsub_le_self },
     split, { apply le_trans n1le tsub_le_self },
     apply le_trans n2le,
@@ -409,7 +409,7 @@ begin
   { simp [on_ec],
     suffices : (↑(iy'.val ^ 2) : secpF) = ↑(ix.val ^ 3 + 7),
     { simpa using this },
-    rw [char_p.int_coe_eq_int_coe_iff secpF SECP_PRIME, int.modeq],
+    rw [char_p.int_cast_eq_int_cast secpF SECP_PRIME, int.modeq],
     symmetry,
     rw [int.mod_eq_mod_iff_mod_sub_eq_zero, ←this],
     dsimp [idiff],

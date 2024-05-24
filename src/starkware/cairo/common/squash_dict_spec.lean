@@ -552,7 +552,11 @@ begin
   have h_forall_le_len : list.forall₂ (λ (seq : list (π_DictAccess mem)) (squash : π_DictAccess mem),
     seq.length ≤ (accesses.filter (λ e : π_DictAccess mem, e.key = squash.key)).length) seqs squashed,
   { apply list.forall₂.imp _ (squashed_sublists_of_filtered h_subseq h_squashed), intros a b h_sub, apply list.length_le_of_sublist h_sub, },
-  have h_forall_le_len_zip := prod.forall'.mpr (list.forall₂_iff_zip.mp h_forall_le_len).2,
+  have : ∀ (a : list (π_DictAccess mem)) (b : π_DictAccess mem),
+    (a, b) ∈ seqs.zip squashed →
+    a.length ≤ (list.filter (λ (e : π_DictAccess mem), e.key = b.key) accesses).length,
+  { intros a b, apply (list.forall₂_iff_zip.mp h_forall_le_len).2 },
+  have h_forall_le_len_zip := prod.forall'.mpr this,
   simp only [prod.mk.eta] at h_forall_le_len_zip,
 
   -- Use the previous two parts to prove the lemma.
@@ -574,10 +578,16 @@ lemma squashed_sublists_of_filtered_eq {mem : F → F} {accesses : list (π_Dict
   list.forall₂ (λ (seq : list (π_DictAccess mem)) (squash : π_DictAccess mem),
     seq = (accesses.filter (λ e : π_DictAccess mem, e.key = squash.key))) seqs squashed :=
 begin
-  have h_sub_zip := prod.forall'.mpr (list.forall₂_iff_zip.mp (squashed_sublists_of_filtered h_subseq h_squashed)).2,
-  have h_len_zip := prod.forall'.mpr
-    (list.forall₂_iff_zip.mp
-      (squashed_sublists_of_filtered_eq_len h_sorted h_subseq h_squashed h_sum_len)).2,
+  have : ∀ (a : list (π_DictAccess mem)) (b : π_DictAccess mem),
+    (a, b) ∈ seqs.zip squashed → a <+ list.filter (λ (e : π_DictAccess mem), e.key = b.key) accesses,
+  { intros a b, apply (list.forall₂_iff_zip.mp (squashed_sublists_of_filtered h_subseq h_squashed)).2 },
+  have h_sub_zip := prod.forall'.mpr this,
+  have : ∀ (a : list (π_DictAccess mem)) (b : π_DictAccess mem),
+    (a, b) ∈ seqs.zip squashed →
+    a.length = (list.filter (λ (e : π_DictAccess mem), e.key = b.key) accesses).length,
+  { intros a b, apply (list.forall₂_iff_zip.mp
+      (squashed_sublists_of_filtered_eq_len h_sorted h_subseq h_squashed h_sum_len)).2},
+  have h_len_zip := prod.forall'.mpr this,
   rw list.forall₂_iff_zip, use [list.forall₂.length_eq h_squashed],
   rw [←prod.forall'],
   intros x h_x, apply sublist_eq_of_length,

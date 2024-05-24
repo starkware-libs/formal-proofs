@@ -1,6 +1,6 @@
 import field_theory.finite.basic
 import data.bitvec.basic
-import algebra.group_with_zero
+import algebra.group_with_zero.basic
 import tactic.omega
 
 open_locale big_operators
@@ -31,9 +31,6 @@ int.le_of_dvd h' ((abs_dvd _ _).mpr h)
 
 theorem modeq_iff_sub_mod_eq_zero {i j m : ℤ} : i ≡ j [ZMOD m] ↔ (i - j) % m = 0 :=
 by rw [int.modeq_iff_dvd, ←neg_sub, dvd_neg, int.dvd_iff_mod_eq_zero]
-
-theorem modeq_zero_iff {i m : ℤ} : i ≡ 0 [ZMOD m] ↔ i % m = 0 :=
-by rw [modeq_iff_sub_mod_eq_zero, sub_zero]
 
 end int
 
@@ -120,15 +117,6 @@ begin
   rintros (⟨i, h⟩ | h); exact exists.intro _ h
 end
 
-@[simp] def rev {n : ℕ} : fin n → fin n
-| ⟨i, h⟩ := ⟨n - i.succ, by omega⟩
-
-@[simp] theorem rev_rev {n : ℕ} (i : fin n) : rev (rev i) = i :=
-by { cases i with i h, unfold rev, ext, dsimp, omega }
-
-@[simp] theorem coe_rev {n : ℕ} (i : fin n) : (i.rev : ℕ) = n - i.succ :=
-by { cases i with i h, refl }
-
 @[simp] theorem rev_zero {n : ℕ} : (0 : fin (n + 1)).rev = last n :=
 by refl
 
@@ -151,22 +139,6 @@ by { cases i with i' h', ext, simp }
 theorem rev_cast_succ {n : ℕ} (i : fin n) :
   i.cast_succ.rev = i.rev.succ :=
 by conv { to_lhs, rw [← rev_rev i, cast_succ_rev, rev_rev] }
-
-theorem rev_lt_rev_iff {n : ℕ} (i j : fin n) : rev i < rev j ↔ j < i :=
-begin
-  cases i with i ih, cases j with j jh, rw [rev, rev],
-  transitivity,
-  apply tsub_lt_tsub_iff_left_of_le (nat.succ_le_of_lt ih),
-  exact ⟨nat.lt_of_succ_lt_succ, nat.succ_lt_succ⟩
-end
-
-theorem rev_le_rev_iff {n : ℕ} (i j : fin n) : rev i ≤ rev j ↔ j ≤ i :=
-begin
-  cases i with i ih, cases j with j jh, rw [rev, rev],
-  transitivity,
-  apply tsub_le_tsub_iff_left (nat.succ_le_of_lt jh),
-  apply nat.succ_le_succ_iff
-end
 
 theorem add_one_le_of_lt {n : ℕ} {i j : fin (n + 1)} (h : i < j) : i + 1 ≤ j :=
 begin
@@ -201,9 +173,6 @@ by { cases i, cases j, apply nat.lt_succ_iff }
 by { cases i, cases j, refl }
 
 theorem one_eq_succ_zero {n : ℕ} : (1 : fin (n + 2)) = fin.succ 0 := rfl
-
-theorem le_zero_iff {n : ℕ} (i : fin (n + 1)) : i ≤ 0 ↔ i = 0 :=
-by { rw [fin.ext_iff, fin.le_def], cases i, apply le_zero_iff }
 
 lemma last_zero : fin.last 0 = 0 :=
 by { ext, refl }
@@ -250,7 +219,7 @@ begin
        cast_succ_le_cast_succ_iff, le_zero_iff]
 end
 
-theorem range_succ (i : fin n) : range i.succ = insert i (range i.cast_succ) :=
+theorem range_succ_eq_insert (i : fin n) : range i.succ = insert i (range i.cast_succ) :=
 begin
   ext j,
   rw [mem_range, finset.mem_insert, mem_range, cast_succ_lt_succ_iff, le_iff_lt_or_eq,
@@ -302,7 +271,7 @@ by { rw [range_one], rw finset.prod_singleton }
 @[to_additive]
 lemma prod_range_succ (f : fin n → β) (i : fin n) :
   (∏ x in range i.succ, f x) = f i * (∏ x in range i.cast_succ, f x) :=
-by rw [range_succ, finset.prod_insert (not_mem_range_self i)]
+by rw [range_succ_eq_insert, finset.prod_insert (not_mem_range_self i)]
 
 lemma prod_range_succ' (f : fin (n + 1) → β) (i : fin (n + 1)) :
   (∏ k in range i.succ, f k) = (∏ k in range i, f k.succ) * f 0 :=
@@ -432,8 +401,10 @@ end
 theorem cast_inj_of_lt_char {a b : ℕ} (ha : a < ring_char R) (hb : b < ring_char R)
   (h : (a : R) = (b : R)) : a = b :=
 begin
-  wlog h' : a ≤ b,
-  exact cast_inj_of_lt_char' h' hb h
+  --wlog h' : a ≤ b,
+  rcases le_or_gt a b with (h_le | h_le),
+  { exact cast_inj_of_lt_char' h_le hb h },
+  { exact (cast_inj_of_lt_char' (le_of_lt h_le) ha h.symm).symm }
 end
 
 end nat

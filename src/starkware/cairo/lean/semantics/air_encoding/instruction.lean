@@ -37,7 +37,7 @@ begin
   intro j, rw [fin.mem_range, fin.cast_succ_lt_cast_succ_iff], intro hj,
   rw [←mul_assoc, ←pow_succ, fin.coe_succ, nat.sub_succ, fin.coe_cast_succ, fin.coe_cast_succ], congr, symmetry, apply nat.succ_pred_eq_of_pos,
   apply nat.sub_pos_of_lt,
-  rwa [←fin.lt_iff_coe_lt_coe, ←fin.rev_lt_rev_iff, fin.rev_rev]
+  rwa [←fin.lt_iff_coe_lt_coe, ←fin.rev_lt_rev, fin.rev_rev]
 end
 
 section

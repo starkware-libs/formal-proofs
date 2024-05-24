@@ -81,7 +81,6 @@ end secpF
 
 class secp_field (secpF : Type*) extends ec_field secpF, char_p secpF secp_p :=
 (BETA_not_square : ∀ y : secpF, y^2 ≠ BETA)
-(ec_no_zero : ∀ x : secpF, x ^ 3 ≠ -↑BETA - ↑ALPHA * x)
 (order_large : ∀ {pt : ECPoint secpF}, pt ≠ 0 → ∀ {n : ℕ}, n ≠ 0 → n < 2^252 → n • pt ≠ 0)
 
 theorem secp_field.order_large_corr {secpF : Type*} [secp_field secpF]
@@ -115,7 +114,7 @@ begin
   apply lt_trans,
   change (_ < 2^128 * 2 + 1),
   apply add_lt_add_right,
-  apply zero_lt.mul_lt_mul_right' nlt,
+  apply mul_lt_mul_of_pos_right nlt,
   norm_num, norm_num
 end
 
@@ -126,6 +125,9 @@ theorem secp_field.order_large_corr' {secpF : Type*} [secp_field secpF]
 begin
   by_contradiction h,
   wlog h' : n < m,
+  apply this mlt nlt ptnz heq.symm (ne.symm h),
+  contrapose! h,
+  linarith,
   rwa [←ne, ←lt_or_lt_iff_ne] at h,
   have : (m - n) • pt = 0,
   { rw [sub_nsmul _ (le_of_lt h'), heq, add_right_neg] },
@@ -139,7 +141,7 @@ end
 theorem secp_field.y_ne_zero_of_on_ec  {secpF : Type*} [secp_field secpF] {x y : secpF}
   (h : on_ec (x, y)) : y ≠ 0 :=
 by { contrapose! h, simp only [on_ec, h, ←sub_eq_iff_eq_add, pow_two, mul_zero, zero_sub],
-     apply ne.symm, apply secp_field.ec_no_zero }
+     apply ne.symm, apply ec_field.ec_no_zero }
 
 theorem secp_field.x_ne_zero_of_on_ec {secpF : Type*} [secp_field secpF] {x y : secpF}
   (h : on_ec (x, y)) : x ≠ 0 :=
@@ -157,7 +159,7 @@ begin
     { rwa [two_mul, ←eq_neg_iff_add_eq_zero] },
     rw mul_eq_zero at this,
     simp only [or.resolve_left this ec_field.two_ne_zero, pow_two, zero_mul] at h_on_ec,
-    apply secp_field.ec_no_zero x.x,
+    apply ec_field.ec_no_zero x.x,
     have := h_on_ec.symm,
     rw [add_assoc, ← eq_neg_iff_add_eq_zero] at this,
     rw this, abel },
@@ -660,13 +662,13 @@ begin
   have onec_pt := hpt.onEC' ptxnz,
   have hptynez : (hpt.iy.val : secpF) ≠ 0 := secp_field.y_ne_zero_of_on_ec onec_pt,
   have eq1 : 3 * (hpt.ix.val : secpF)^2 + ALPHA = 2 * hpt.iy.val * is.val,
-  { norm_cast, rw @eq_iff_modeq_int secpF _ secp_p,
+  { norm_cast, rw @char_p.int_cast_eq_int_cast secpF _ secp_p,
     apply mod1eq },
   have eq2 : (inew_x.val : secpF) = is.val ^ 2 - 2 * hpt.ix.val,
-  { norm_cast, rw @eq_iff_modeq_int secpF _ secp_p,
+  { norm_cast, rw @char_p.int_cast_eq_int_cast secpF _ secp_p,
     apply mod2eq },
   have eq3: (inew_y.val : secpF) = (hpt.ix.val - inew_x.val) * is.val - hpt.iy.val,
-  { norm_cast, rw @eq_iff_modeq_int secpF _ secp_p,
+  { norm_cast, rw @char_p.int_cast_eq_int_cast secpF _ secp_p,
     apply mod3eq },
   have eq1a : (is.val : secpF) = (3 * (hpt.ix.val : secpF)^2 + ALPHA) / (2 * hpt.iy.val),
   { field_simp [ec_field.two_ne_zero], simp [ALPHA] at eq1, rw [mul_comm, eq1] },
@@ -1030,13 +1032,13 @@ begin
   rw [←or_assoc] at hne,
   have hne := or.resolve_right (or.resolve_right hne h1ptnz) h0ptnz,
   have eq1 : ((h0.ix.val : secpF) - h1.ix.val) * is.val = h0.iy.val - h1.iy.val,
-  { norm_cast, rw @eq_iff_modeq_int secpF _ secp_p,
+  { norm_cast, rw @char_p.int_cast_eq_int_cast secpF _ secp_p,
     apply mod1eq },
   have eq2 : (inew_x.val : secpF) = is.val ^ 2 - h0.ix.val - h1.ix.val,
-  { norm_cast, rw @eq_iff_modeq_int secpF _ secp_p,
+  { norm_cast, rw @char_p.int_cast_eq_int_cast secpF _ secp_p,
     apply mod2eq },
   have eq3: (inew_y.val : secpF) = (h0.ix.val - inew_x.val) * is.val - h0.iy.val,
-  { norm_cast, rw @eq_iff_modeq_int secpF _ secp_p,
+  { norm_cast, rw @char_p.int_cast_eq_int_cast secpF _ secp_p,
     apply mod3eq },
   have nez : (h1.ix.val : secpF) - h0.ix.val ≠ 0,
   { contrapose! hne, symmetry, apply eq_of_sub_eq_zero hne },
@@ -1152,7 +1154,7 @@ begin
     apply spec_fast_ec_add'_of_spec_fast_ec_add h'.1,
     contrapose! this,
     dsimp [ix_diff], rw [bigint3.sub_val, ←int.modeq_iff_sub_mod_eq_zero,
-      ←char_p.int_coe_eq_int_coe_iff secpF],
+      ←char_p.int_cast_eq_int_cast secpF],
     exact this.1 },
   have := h_x_diff _ (bigint3.eq_toBigInt3_iff_eq_toSumBigInt3.mpr h2) h3,
   have : ix_diff.val % ↑secp_p = 0,
@@ -1160,7 +1162,7 @@ begin
     assumption, norm_num at same_x_nz },
   have h0eqh1: (h0.ix.val : secpF) = h1.ix.val,
   { rw [bigint3.sub_val, ←int.modeq_iff_sub_mod_eq_zero,
-       ←char_p.int_coe_eq_int_coe_iff secpF] at this,
+       ←char_p.int_cast_eq_int_cast secpF] at this,
      exact this },
   have ptx0iff : point0.x = ⟨0, 0, 0⟩ ↔ point1.x = ⟨0, 0, 0⟩,
   { rw [h1.pt_zero_iff, ←h0eqh1, ←h0.pt_zero_iff] },
@@ -1194,7 +1196,7 @@ begin
     { rcases this with ⟨_, _⟩ | ⟨_, hh⟩,
       assumption, contradiction },
     rw [bigint3.add_val, ←sub_neg_eq_add, ←int.modeq_iff_sub_mod_eq_zero,
-       ←char_p.int_coe_eq_int_coe_iff secpF, int.cast_neg] at this,
+       ←char_p.int_cast_eq_int_cast secpF, int.cast_neg] at this,
     exact this },
   have := h_opposite_y _ (bigint3.eq_toBigInt3_iff_eq_toSumBigInt3.mpr h2) h3,
   have h0iyneh1iy : iy_sum.val % ↑secp_p ≠ 0,
@@ -1202,7 +1204,7 @@ begin
     norm_num at opposite_y_z,
     assumption },
   rw [ne, bigint3.add_val, ←sub_neg_eq_add, ←int.modeq_iff_sub_mod_eq_zero,
-      ←char_p.int_coe_eq_int_coe_iff secpF, int.cast_neg] at h0iyneh1iy,
+      ←char_p.int_cast_eq_int_cast secpF, int.cast_neg] at h0iyneh1iy,
   have : h0.toECPoint = h1.toECPoint :=
     BddECPointData.toECPoint_eq_of_eq_of_ne h0eqh1 h0iyneh1iy,
   have : h0.toECPoint + h1.toECPoint = 2 • h0.toECPoint,
@@ -1593,7 +1595,7 @@ begin
     rcases this with h | h,
     { have : 16 * n = nnibble,
       { apply secp_field.order_large_corr' _ _ Pz h,
-        apply lt_of_lt_of_le (mul_lt_mul_left' nlt _), norm_num1, norm_num1,
+        apply lt_of_lt_of_le (mul_lt_mul_of_pos_left nlt _), norm_num1, norm_num1,
         apply lt_of_lt_of_le nnibble_lt, norm_num1 },
       have h' := congr_arg (λ n, n % 16) this, dsimp at h',
       rw [nat.mul_mod_right, nat.mod_eq_of_lt nnibble_lt] at h',
@@ -2226,8 +2228,8 @@ theorem try_get_aux'' (secpF : Type) [secp_field secpF]
 begin
   intro iy',
   rw [on_ec], simp at h |-,
-  rw [←h, ←int.cast_pow, ←int.cast_pow, ←int.cast_neg, char_p.int_coe_eq_int_coe_iff secpF secp_p],
-  rw [←char_p.int_coe_eq_int_coe_iff (zmod secp_p) secp_p, int.cast_neg, int.cast_pow,
+  rw [←h, ←int.cast_pow, ←int.cast_pow, ←int.cast_neg, char_p.int_cast_eq_int_cast secpF secp_p],
+  rw [←char_p.int_cast_eq_int_cast (zmod secp_p) secp_p, int.cast_neg, int.cast_pow,
     int.cast_pow],
   have : secp_p ≠ 0,
   { rw [secp_p, P0, P1, P2, BASE], norm_num },
@@ -2238,7 +2240,7 @@ begin
       ←char_p.int_cast_eq_zero_iff secpF secp_p],
     intro h',
     simp [h'] at h,
-    apply @secp_field.ec_no_zero secpF _ ↑ix,
+    apply @ec_field.ec_no_zero secpF _ ↑ix,
     rw [add_assoc] at h,
     rw [eq_sub_of_add_eq h.symm], simp [ALPHA], abel },
   intro h,
@@ -2325,7 +2327,7 @@ begin
   have n02eqmv2 : n0 % 2 = nv % 2 := try_get_aux' this,
   let  iy' : bigint3 := ⟨n0, n1, n2⟩,
   have iy'bdd : iy'.bounded' D2_BOUND,
-  { simp only [bigint3.bounded', int.coe_nat_abs],
+  { simp only [bigint3.bounded', nat.abs_cast],
     split,
     { rw [←int.coe_nat_le_coe_nat_iff] at n0le,
       apply le_trans n0le,
@@ -2366,7 +2368,7 @@ begin
   { simp [on_ec],
     suffices : (↑(iy'.val ^ 2) : secpF) = ↑(ix.val ^ 3 + ALPHA * ix.val + BETA),
     { simpa using this },
-    rw [char_p.int_coe_eq_int_coe_iff secpF secp_p, int.modeq],
+    rw [char_p.int_cast_eq_int_cast secpF secp_p, int.modeq],
     symmetry,
     rw [int.mod_eq_mod_iff_mod_sub_eq_zero, ←this],
     dsimp [idiff],
@@ -2469,7 +2471,7 @@ begin
   apply try_get_aux'' secpF iy.val ix.val,
   apply neg_eq_of_add_eq_zero_left,
   rw [←int.cast_add, ←int.cast_zero],
-  rw [char_p.int_coe_eq_int_coe_iff secpF secp_p, int.modeq],
+  rw [char_p.int_cast_eq_int_cast secpF secp_p, int.modeq],
   rw [int.zero_mod, ←this],
   dsimp [idiff],
   rw [bigint3.add_val, bigint3.add_val, bigint3.add_val],

@@ -33,8 +33,6 @@ This repository contains a number of related items.
   [signature_spec.lean](src/starkware/cairo/common/cairo_secp/signature_spec.lean).
   You can find the corresponding Cairo code in the
   [cairo-lang repository](https://github.com/starkware-libs/cairo-lang/tree/master/src/starkware/cairo/common/cairo_secp).
-  We have not yet verified the associativity of elliptic curve addition in Lean, so that has to be
-  trusted.
 
 - The folder [src/starkware/cairo/common/cairo_secp/verification](src/starkware/cairo/common/cairo_secp/verification)
   contains [signature_recover_public_key.cairo](src/starkware/cairo/common/cairo_secp/verification/signature_recover_public_key.cairo),
@@ -60,8 +58,9 @@ verifier. Two manual modifications were needed: the constants `SECP_REM*`, `BETA
 rather than natural numbers, and the final part of the soundness proof in
 `secp256r1/verification/ec_alloc_soundness.lean` was replaced by `trivial`.
 
-The `cairo-v0.13.1` verifier, however, has not yet been made public. The verifier and the examples
-in that directory correspond to `cairo-v0.10.1`.
+The `cairo-v0.13.1` verifier has not been made public. The verifier and the examples
+in [src/starkware/cairo/lean/verification](src/starkware/cairo/lean/verification) correspond 
+to `cairo-v0.10.1`.
 
 
 Publications
@@ -84,6 +83,10 @@ Here are some things that are new and not covered in the publications:
 - We have verified the correctness of elliptic curve operations for the Secp256r1 elliptic curve
   that are used in Cairo 1.
 
+- We have used the [work of Angdinata and Xu](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ITP.2023.6)
+  to establish the associativity of the addition laws for our elliptic curves, closing a gap alluded to in
+  the second publication.
+
 
 Setup
 -----
@@ -92,31 +95,13 @@ To use Lean to verify the correctness of proofs (either those generated automati
 verifier or those written manually for the AIR encoding or secp signatures), you need to have
 Lean 3 installed:
 
->  https://leanprover-community.github.io/get_started.html
+>  https://leanprover-community.github.io/lean3/get_started.html
 
 If you fetched this repository using `git clone` rather than  `leanproject get`, use
 ```
   leanproject get-mathlib-cache
 ```
 to fetch a compiled version of the math library.
-
-To run the Cairo verifier, you need to have the Cairo compiler installed:
-
->  https://www.cairo-lang.org/docs/quickstart.html
-
-The verifier here is designed to work with version `v.0.10.1`, so you should use
-```
-  pip install cairo-lang==0.10.1
-```
-to make sure you are installing the right version. Alternatively, you can download a zip file from
-the [cairo-lang](https://github.com/starkware-libs/cairo-lang/releases/tag/v0.10.1) repository
-and install from that:
-```
-  pip install cairo-lang-0.10.1.zip
-```
-Note that most of the verification files in this repository correspond to Cairo version `v0.13.1`
-and were generated with a newer version of the verifier. So this version of the verifier should only
-be used on the examples from `v0.10.1`, as described in the instructions below.
 
 
 Usage
@@ -170,7 +155,7 @@ in [src/starkware/cairo/common/secp256r1/verification](src/starkware/cairo/commo
 You will get warnings that the file `elliptic_curves.lean` uses `sorry`. That refers to the
 associativity of the elliptic curve law, which we assert without proof.
 
-To try out an older version of the verifier, follow the instructions in the
+To try out the version of the verifier for `cairo-v0.10.1`, follow the instructions in the
 [README](src/starkware/cairo/lean/verification/examples/math/README.md) file in
 [src/starkware/cairo/lean/verification/examples/math](src/starkware/cairo/lean/verification/examples/math).
 

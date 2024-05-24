@@ -223,7 +223,6 @@ lemma a'_continuous_aux (i : fin (n + 1)) :
   ∀ k ≤ a'_nat_offset a' i, ∃ j ≤ i, a'_nat_offset a' j = k :=
 begin
   apply fin.induction_on i; simp,
-  { use [0, le_refl _], simp },
   intros i' ih k,
   cases (a'_succ_eq h_continuity i') with h h,
   { simp [a'_step_of_eq _ h, h],

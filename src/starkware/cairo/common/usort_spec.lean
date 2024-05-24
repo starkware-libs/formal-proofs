@@ -170,8 +170,8 @@ def auto_spec_verify_multiplicity (mem : F → F) (κ : ℕ) (range_check_ptr mu
    (multiplicity ≠ 0 ∧
     ∃ next_item_index : F,
     ∃ (κ₁ : ℕ) (range_check_ptr₁ : F), spec_assert_nn mem κ₁ range_check_ptr next_item_index range_check_ptr₁ ∧
-    mem (input + next_item_index) = value ∧
-    ∃ (κ₂ : ℕ), spec_verify_multiplicity mem κ₂ range_check_ptr₁ (multiplicity - 1) (input_len - next_item_index - 1) (input + (next_item_index + 1)) value ρ_range_check_ptr ∧
+    mem (input + (next_item_index)) = value ∧
+    ∃ (κ₂ : ℕ), spec_verify_multiplicity mem κ₂ range_check_ptr₁ (multiplicity - 1) (input_len - next_item_index - 1) (input + ((next_item_index + 1))) value ρ_range_check_ptr ∧
     κ₁ + κ₂ + 16 ≤ κ))
 
 /- verify_multiplicity soundness theorem -/
@@ -270,13 +270,13 @@ def auto_spec_verify_usort (mem : F → F) (κ : ℕ) (range_check_ptr output in
    (total_visited ≠ input_len ∧
     ∃ value : F,
     value = mem output ∧
-    ∃ output₁ : F, output₁ = output + 1 ∧
+    ∃ output₁ : F, output₁ = output + (1) ∧
     ∃ (κ₁ : ℕ) (range_check_ptr₁ : F), spec_assert_lt mem κ₁ range_check_ptr prev value range_check_ptr₁ ∧
     ∃ multiplicity : F,
     multiplicity = mem multiplicities ∧
     ∃ (κ₂ : ℕ) (range_check_ptr₂ : F), spec_assert_nn mem κ₂ range_check_ptr₁ (multiplicity - 1) range_check_ptr₂ ∧
     ∃ (κ₃ : ℕ) (range_check_ptr₃ : F), spec_verify_multiplicity mem κ₃ range_check_ptr₂ multiplicity input_len input value range_check_ptr₃ ∧
-    ∃ (κ₄ : ℕ), spec_verify_usort mem κ₄ range_check_ptr₃ output₁ input_len input (total_visited + multiplicity) (multiplicities + 1) value ρ_range_check_ptr ρ_output ∧
+    ∃ (κ₄ : ℕ), spec_verify_usort mem κ₄ range_check_ptr₃ output₁ input_len input (total_visited + multiplicity) (multiplicities + (1)) value ρ_range_check_ptr ρ_output ∧
     κ₁ + κ₂ + κ₃ + κ₄ + 24 ≤ κ))
 
 /- verify_usort soundness theorem -/

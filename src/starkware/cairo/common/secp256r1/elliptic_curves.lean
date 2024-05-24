@@ -1,4 +1,5 @@
 import data.zmod.algebra
+import algebraic_geometry.elliptic_curve.point
 import tactic
 import starkware.cairo.common.secp256r1.constants_spec
 
@@ -7,6 +8,7 @@ open starkware.cairo.common.secp256r1.constants
 class ec_field (F : Type*) extends field F :=
 (deceqF : decidable_eq F)
 (two_ne_zero : (2 : F) ≠ 0)
+(ec_no_zero : ∀ x : F, x ^ 3 ≠ -↑BETA - ↑ALPHA * x)
 
 instance ec_field.decidable_eq (F : Type*) [h : ec_field F] : decidable_eq F :=
 h.deceqF
@@ -113,8 +115,8 @@ begin
   by_cases h : a.x = b.x,
   { rw [dif_pos h, dif_pos h.symm], simp [h],
     by_cases h': a.y = -b.y,
-    { rw [dif_pos h', dif_pos (eq_neg_of_eq_neg h')] },
-    rw [dif_neg h', dif_neg (λ h'', h' (eq_neg_of_eq_neg h''))],
+    { rw [dif_pos h', dif_pos (neg_eq_iff_eq_neg.mp h'.symm)] },
+    rw [dif_neg h', dif_neg (λ h'', h' (neg_eq_iff_eq_neg.mpr h'').symm)],
     simp [eq_of_on_ec a.h b.h h h'] },
   rw [dif_neg h, dif_neg (ne.symm h)],
   have : ec_add_slope (a.x, a.y) (b.x, b.y) = ec_add_slope (b.x, b.y) (a.x, a.y),
@@ -129,11 +131,83 @@ end
 
 end ECPoint
 
+open weierstrass_curve
+def curve : weierstrass_curve F := ⟨0, 0, 0, ALPHA, BETA⟩
+
+lemma on_ec_of_nonsingular {x y : F} (h : curve.nonsingular x y) :
+  on_ec ⟨x, y⟩ := by
+{ simp [curve, nonsingular] at h,
+  simp [on_ec],
+  exact h.1 }
+
+lemma nonsingular_of_on_ec {x y : F} (h : on_ec ⟨x, y⟩) :
+  curve.nonsingular x y :=
+begin
+  simp [curve, nonsingular],
+  simp [on_ec] at h,
+  split, { exact h },
+  apply not_or_of_imp,
+  intro h',
+  rw [not_or_distrib], split,
+  { apply ec_field.two_ne_zero },
+  intro h'',
+  simp [on_ec, h', h''] at h,
+  apply ec_field.ec_no_zero x,
+  simp [ALPHA],
+  rw [eq_neg_of_add_eq_zero_right h.symm],
+  abel
+end
+
+def curve_to_ECPoint : (@curve F _).point → ECPoint F
+  | point.zero := ECPoint.ZeroPoint
+  | (@point.some _ _ _ x y h) := ECPoint.AffinePoint ⟨x, y, on_ec_of_nonsingular h⟩
+
+def ECPoint_to_curve : ECPoint F → (@curve F _).point
+  | ECPoint.ZeroPoint := point.zero
+  | (ECPoint.AffinePoint ⟨x, y, h⟩) := point.some (nonsingular_of_on_ec h)
+
+open function
+
+lemma left_inverse_curve_to_ECPoint :
+  left_inverse (@curve_to_ECPoint F _) (@ECPoint_to_curve F _) :=
+begin
+  rintro (⟨⟩ | ⟨x, y, h⟩),
+  { refl },
+  simp [curve_to_ECPoint, ECPoint_to_curve]
+end
+
+theorem ECPoint_to_curve_add (a b : ECPoint F) :
+  ECPoint_to_curve (a.add b) = ECPoint_to_curve a + ECPoint_to_curve b :=
+begin
+  cases a with a; cases b with b; simp [ECPoint.add, ECPoint_to_curve, curve_to_ECPoint, ECPoint.add],
+  cases a with ax ay ah; cases b with bx by' bh; dsimp [ECPoint_to_curve],
+  rw [←point.add_def, point.add],
+  by_cases xeq : ax = bx,
+  { simp [dif_pos xeq, curve],
+     by_cases yeqneg : ay = -by',
+     { simp [dif_pos yeqneg], refl },
+     simp [dif_neg yeqneg, ECPoint_to_curve, ec_double, weierstrass_curve.slope, dif_pos xeq,
+       ec_double_slope],
+      rw [←xeq], split; ring_nf },
+  simp [dif_neg xeq, curve, ECPoint_to_curve, ec_add, weierstrass_curve.slope, ec_add_slope],
+  split, ring_nf,
+  have : (ax - bx) ≠ 0,
+  { intro h, apply xeq, rw [eq_of_sub_eq_zero h] },
+  have : (bx - ax) ≠ 0,
+  { intro h, apply xeq, rw [eq_of_sub_eq_zero h] },
+  field_simp [xeq], ring
+end
+
 instance : add_comm_group (ECPoint F) :=
 { add          := ECPoint.add,
   neg          := ECPoint.neg,
   zero         := ECPoint.ZeroPoint,
-  add_assoc    := sorry,
+  add_assoc    :=
+    begin
+      intros a b c,
+      apply (left_inverse_curve_to_ECPoint).injective,
+      simp [ECPoint_to_curve_add, add_assoc]
+    end,
   zero_add     := by { intro a, cases a; simp [ECPoint.add] },
   add_zero     := by { intro a, cases a; simp [ECPoint.add] },
   add_left_neg := ECPoint.add_left_neg,
