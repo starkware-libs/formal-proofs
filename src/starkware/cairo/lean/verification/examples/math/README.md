@@ -3,7 +3,7 @@ Trying out the verifier
 
 To use Lean, follow the installation instructions in this repository's main README file.
 
-To run the Cairo verifier, you need to have the Cairo compiler installed.
+To run the CairoZero verifier, you need to have the CairoZero compiler installed.
 The verifier here is designed to work with version `v.0.10.1`, so you should use
 ```
   pip install cairo-lang==0.10.1
