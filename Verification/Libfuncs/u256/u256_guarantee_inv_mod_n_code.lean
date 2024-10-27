@@ -1,0 +1,396 @@
+import Verification.Semantics.Assembly
+import Verification.Semantics.Completeness.VmAssembly
+
+set_option maxRecDepth 1024
+
+open Casm in
+casm_code_def u256_guarantee_inv_mod_n_code := {
+  -- %{
+  -- from starkware.python.math_utils import igcdex
+  -- b = memory[fp + -6] + (memory[fp + -5] << 128)
+  -- n = memory[fp + -4] + (memory[fp + -3] << 128)
+  -- (_, r, g) = igcdex(n, b)
+  -- if n == 1:
+  --     memory[ap + 0] = 1
+  --     memory[ap + 1] = 0
+  --     memory[ap + 2] = memory[fp + -6]
+  --     memory[ap + 3] = memory[fp + -5]
+  --     memory[ap + 4] = 1
+  --     memory[ap + 5] = 0
+  -- elif g != 1:
+  --     if g % 2 == 0:
+  --         g = 2
+  --     s = b // g
+  --     t = n // g
+  --     memory[ap + 0] = g & 0xffffffffffffffffffffffffffffffff
+  --     memory[ap + 1] = g >> 128
+  --     memory[ap + 2] = s & 0xffffffffffffffffffffffffffffffff
+  --     memory[ap + 3] = s >> 128
+  --     memory[ap + 4] = t & 0xffffffffffffffffffffffffffffffff
+  --     memory[ap + 5] = t >> 128
+  -- else:
+  --     r %= n
+  --     k = (r * b - 1) // n
+  --     memory[ap + 0] = 0
+  --     memory[ap + 2] = r & 0xffffffffffffffffffffffffffffffff
+  --     memory[ap + 3] = r >> 128
+  --     memory[ap + 4] = k & 0xffffffffffffffffffffffffffffffff
+  --     memory[ap + 5] = k >> 128
+  -- %}
+  jmp rel 55 if [ap + 0] != 0, ap++;
+  [ap + 1] = [[fp + -7] + 0], ap++;
+  [ap + 1] = [[fp + -7] + 1], ap++;
+  [ap + 1] = [[fp + -7] + 2], ap++;
+  [ap + 1] = [[fp + -7] + 3], ap++;
+  [fp + -3] = [ap + 1] + [ap + -2], ap++;
+  ap += 18;
+  jmp rel 8 if [ap + -18] != 0;
+  [fp + -4] = [ap + -17] + [ap + -22];
+  [ap + -17] = [ap + -16] + 1;
+  [ap + -16] = [[fp + -7] + 4];
+  jmp rel 3;
+  [ap + -18] = [[fp + -7] + 4];
+  -- %{ (memory[ap + -14], memory[ap + -15]) = divmod(memory[ap + -22] * memory[fp + -6], 2**128) %}
+  -- %{ (memory[ap + -12], memory[ap + -13]) = divmod(memory[ap + -22] * memory[fp + -5], 2**128) %}
+  -- %{ (memory[ap + -10], memory[ap + -11]) = divmod(memory[ap + -21] * memory[fp + -6], 2**128) %}
+  -- %{ (memory[ap + -8], memory[ap + -9]) = divmod(memory[ap + -21] * memory[fp + -5], 2**128) %}
+  -- %{ (memory[ap + -6], memory[ap + -7]) = divmod(memory[fp + -4] * memory[ap + -20], 2**128) %}
+  -- %{ (memory[ap + -4], memory[ap + -5]) = divmod(memory[fp + -4] * memory[ap + -19], 2**128) %}
+  -- %{ (memory[ap + -2], memory[ap + -3]) = divmod(memory[fp + -3] * memory[ap + -20], 2**128) %}
+  -- %{ (memory[ap + 0], memory[ap + -1]) = divmod(memory[fp + -3] * memory[ap + -19], 2**128) %}
+  [ap + 1] = [ap + -7] + 1, ap++;
+  [ap + 0] = [ap + 1] + [ap + -16], ap++;
+  [ap + 0] = [ap + 1] * 340282366920938463463374607431768211456, ap++;
+  [ap + 0] = [ap + 0] * [ap + 0], ap++;
+  [ap + 0] = [ap + -10] + [ap + -1], ap++;
+  [ap + 0] = [ap + -1] + [ap + -10], ap++;
+  [ap + 0] = [ap + -1] + [ap + -9], ap++;
+  [ap + -1] = [ap + 0] + [ap + -21], ap++;
+  [ap + -1] = [ap + 0] + [ap + -21], ap++;
+  [ap + -1] = [ap + 0] + [ap + -20], ap++;
+  [ap + -1] = [ap + 0] * 340282366920938463463374607431768211456, ap++;
+  [ap + -1] = [ap + 0] + -32768, ap++;
+  [ap + -1] = [[fp + -7] + 5];
+  [ap + 0] = [ap + -2] + 340282366920938463463374607431768178688, ap++;
+  [ap + -1] = [[fp + -7] + 6];
+  [ap + 0] = [ap + -17] + [ap + -3], ap++;
+  [ap + 0] = [ap + -1] + [ap + -16], ap++;
+  [ap + 0] = [ap + -1] + [ap + -16], ap++;
+  [ap + -1] = [ap + 0] + [ap + -26], ap++;
+  [ap + -1] = [ap + 0] + [ap + -29], ap++;
+  [ap + -1] = [ap + 0] + [ap + -27], ap++;
+  [ap + -1] = [ap + 0] * 340282366920938463463374607431768211456, ap++;
+  [ap + -1] = [ap + 0] + -32768, ap++;
+  [ap + -1] = [[fp + -7] + 7];
+  [ap + 0] = [ap + -2] + 340282366920938463463374607431768178688, ap++;
+  [ap + -1] = [[fp + -7] + 8];
+  [ap + -30] = [ap + -22] + [ap + -3];
+  jmp rel 49;
+  [ap + -1] = [[fp + -7] + 0], ap++;
+  [ap + -1] = [[fp + -7] + 1], ap++;
+  [ap + -1] = [[fp + -7] + 2], ap++;
+  [ap + -1] = [[fp + -7] + 3], ap++;
+  [ap + -1] = [[fp + -7] + 4], ap++;
+  [ap + -1] = [[fp + -7] + 5];
+  jmp rel 10 if [ap + -5] != 0, ap++;
+  [ap + -7] = [ap + -1] + 1;
+  jmp rel 6 if [ap + -1] != 0;
+  [fp + -3] = 0;
+  [fp + -4] = 1;
+  -- %{ (memory[ap + 0], memory[fp + -6]) = divmod(memory[ap + -7] * memory[ap + -5], 2**128) %}
+  -- %{ (memory[ap + 1], memory[fp + -4]) = divmod(memory[ap + -7] * memory[ap + -3], 2**128) %}
+  jmp rel 12 if [ap + -6] != 0, ap++;
+  [ap + 1] = [ap + -5] * [ap + -8], ap++;
+  [ap + 1] = [ap + -4] * [ap + -9], ap++;
+  -- %{ memory[ap + 2] = memory[ap + -10] < 18446744073709551616 %}
+  jmp rel 5 if [ap + 2] != 0, ap++;
+  [ap + 0] = [ap + -8] + [ap + -6], ap++;
+  jmp rel 17, ap++;
+  [ap + 0] = [ap + -11], ap++;
+  jmp rel 14, ap++;
+  [ap + 1] = [ap + -6] * [ap + -7], ap++;
+  [ap + 1] = [ap + -5] * [ap + -8], ap++;
+  [ap + -7] = 0, ap++;
+  [ap + -6] = 0, ap++;
+  -- %{ memory[ap + 0] = memory[ap + -11] < 18446744073709551616 %}
+  jmp rel 5 if [ap + 0] != 0, ap++;
+  [ap + -2] = [ap + -11] + [ap + -9];
+  jmp rel 3;
+  [ap + -2] = [ap + -12];
+  [ap + 0] = [ap + -2] + 340282366920938463426481119284349108224, ap++;
+  [ap + -1] = [[fp + -7] + 6];
+  [fp + -5] = [ap + -5] + [ap + -7];
+  [fp + -3] = [ap + -4] + [ap + -6];
+  jmp rel 41;
+  [ap + 0] = [fp + -7] + 9, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = [ap + -46], ap++;
+  [ap + 0] = [ap + -46], ap++;
+  [ap + 0] = [ap + -48], ap++;
+  [ap + 0] = [fp + -6], ap++;
+  [ap + 0] = [ap + -42], ap++;
+  [ap + 0] = [ap + -44], ap++;
+  [ap + 0] = [ap + -52], ap++;
+  [ap + 0] = [fp + -5], ap++;
+  [ap + 0] = [ap + -44], ap++;
+  [ap + 0] = [ap + -46], ap++;
+  [ap + 0] = [ap + -55], ap++;
+  [ap + 0] = [fp + -6], ap++;
+  [ap + 0] = [ap + -46], ap++;
+  [ap + 0] = [ap + -48], ap++;
+  [ap + 0] = [ap + -59], ap++;
+  [ap + 0] = [fp + -5], ap++;
+  [ap + 0] = [ap + -48], ap++;
+  [ap + 0] = [ap + -50], ap++;
+  [ap + 0] = [fp + -4], ap++;
+  [ap + 0] = [ap + -63], ap++;
+  [ap + 0] = [ap + -50], ap++;
+  [ap + 0] = [ap + -52], ap++;
+  [ap + 0] = [fp + -4], ap++;
+  [ap + 0] = [ap + -66], ap++;
+  [ap + 0] = [ap + -52], ap++;
+  [ap + 0] = [ap + -54], ap++;
+  [ap + 0] = [fp + -3], ap++;
+  [ap + 0] = [ap + -71], ap++;
+  [ap + 0] = [ap + -54], ap++;
+  [ap + 0] = [ap + -56], ap++;
+  [ap + 0] = [fp + -3], ap++;
+  [ap + 0] = [ap + -74], ap++;
+  [ap + 0] = [ap + -56], ap++;
+  [ap + 0] = [ap + -58], ap++;
+  ret;
+  ap += 32;
+  [ap + 0] = [fp + -7] + 7, ap++;
+  [ap + 0] = 1, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = [ap + -74], ap++;
+  [ap + 0] = [ap + -73], ap++;
+  [ap + 0] = [ap + -69], ap++;
+  [ap + 0] = [fp + -6], ap++;
+  [ap + 0] = [ap + -78], ap++;
+  [ap + 0] = [ap + -75], ap++;
+  [ap + 0] = [ap + -72], ap++;
+  [ap + 0] = [fp + -4], ap++;
+  ret;
+}
+
+open Casm in
+vm_casm_code_def vm_u256_guarantee_inv_mod_n_code := {
+  -- %{
+  -- from starkware.python.math_utils import igcdex
+  -- b = memory[fp + -6] + (memory[fp + -5] << 128)
+  -- n = memory[fp + -4] + (memory[fp + -3] << 128)
+  -- (_, r, g) = igcdex(n, b)
+  -- if n == 1:
+  --     memory[ap + 0] = 1
+  --     memory[ap + 1] = 0
+  --     memory[ap + 2] = memory[fp + -6]
+  --     memory[ap + 3] = memory[fp + -5]
+  --     memory[ap + 4] = 1
+  --     memory[ap + 5] = 0
+  -- elif g != 1:
+  --     if g % 2 == 0:
+  --         g = 2
+  --     s = b // g
+  --     t = n // g
+  --     memory[ap + 0] = g & 0xffffffffffffffffffffffffffffffff
+  --     memory[ap + 1] = g >> 128
+  --     memory[ap + 2] = s & 0xffffffffffffffffffffffffffffffff
+  --     memory[ap + 3] = s >> 128
+  --     memory[ap + 4] = t & 0xffffffffffffffffffffffffffffffff
+  --     memory[ap + 5] = t >> 128
+  -- else:
+  --     r %= n
+  --     k = (r * b - 1) // n
+  --     memory[ap + 0] = 0
+  --     memory[ap + 2] = r & 0xffffffffffffffffffffffffffffffff
+  --     memory[ap + 3] = r >> 128
+  --     memory[ap + 4] = k & 0xffffffffffffffffffffffffffffffff
+  --     memory[ap + 5] = k >> 128
+  -- %}
+  jmp rel 55 if [ap + 0] != 0, ap++;
+  [ap + 1] = [[fp + -7] + 0], ap++;
+  [ap + 1] = [[fp + -7] + 1], ap++;
+  [ap + 1] = [[fp + -7] + 2], ap++;
+  [ap + 1] = [[fp + -7] + 3], ap++;
+  [fp + -3] = [ap + 1] + [ap + -2], ap++;
+  ap += 18;
+  jmp rel 8 if [ap + -18] != 0;
+  [fp + -4] = [ap + -17] + [ap + -22];
+  [ap + -17] = [ap + -16] + 1;
+  [ap + -16] = [[fp + -7] + 4];
+  jmp rel 3;
+  [ap + -18] = [[fp + -7] + 4];
+  -- %{ (memory[ap + -14], memory[ap + -15]) = divmod(memory[ap + -22] * memory[fp + -6], 2**128) %}
+  -- %{ (memory[ap + -12], memory[ap + -13]) = divmod(memory[ap + -22] * memory[fp + -5], 2**128) %}
+  -- %{ (memory[ap + -10], memory[ap + -11]) = divmod(memory[ap + -21] * memory[fp + -6], 2**128) %}
+  -- %{ (memory[ap + -8], memory[ap + -9]) = divmod(memory[ap + -21] * memory[fp + -5], 2**128) %}
+  -- %{ (memory[ap + -6], memory[ap + -7]) = divmod(memory[fp + -4] * memory[ap + -20], 2**128) %}
+  -- %{ (memory[ap + -4], memory[ap + -5]) = divmod(memory[fp + -4] * memory[ap + -19], 2**128) %}
+  -- %{ (memory[ap + -2], memory[ap + -3]) = divmod(memory[fp + -3] * memory[ap + -20], 2**128) %}
+  -- %{ (memory[ap + 0], memory[ap + -1]) = divmod(memory[fp + -3] * memory[ap + -19], 2**128) %}
+  [ap + 1] = [ap + -7] + 1, ap++;
+  [ap + 0] = [ap + 1] + [ap + -16], ap++;
+  [ap + 0] = [ap + 1] * 340282366920938463463374607431768211456, ap++;
+  [ap + 0] = [ap + 0] * [ap + 0], ap++;
+  [ap + 0] = [ap + -10] + [ap + -1], ap++;
+  [ap + 0] = [ap + -1] + [ap + -10], ap++;
+  [ap + 0] = [ap + -1] + [ap + -9], ap++;
+  [ap + -1] = [ap + 0] + [ap + -21], ap++;
+  [ap + -1] = [ap + 0] + [ap + -21], ap++;
+  [ap + -1] = [ap + 0] + [ap + -20], ap++;
+  [ap + -1] = [ap + 0] * 340282366920938463463374607431768211456, ap++;
+  [ap + -1] = [ap + 0] + -32768, ap++;
+  [ap + -1] = [[fp + -7] + 5];
+  [ap + 0] = [ap + -2] + 340282366920938463463374607431768178688, ap++;
+  [ap + -1] = [[fp + -7] + 6];
+  [ap + 0] = [ap + -17] + [ap + -3], ap++;
+  [ap + 0] = [ap + -1] + [ap + -16], ap++;
+  [ap + 0] = [ap + -1] + [ap + -16], ap++;
+  [ap + -1] = [ap + 0] + [ap + -26], ap++;
+  [ap + -1] = [ap + 0] + [ap + -29], ap++;
+  [ap + -1] = [ap + 0] + [ap + -27], ap++;
+  [ap + -1] = [ap + 0] * 340282366920938463463374607431768211456, ap++;
+  [ap + -1] = [ap + 0] + -32768, ap++;
+  [ap + -1] = [[fp + -7] + 7];
+  [ap + 0] = [ap + -2] + 340282366920938463463374607431768178688, ap++;
+  [ap + -1] = [[fp + -7] + 8];
+  [ap + -30] = [ap + -22] + [ap + -3];
+  jmp rel 49;
+  [ap + -1] = [[fp + -7] + 0], ap++;
+  [ap + -1] = [[fp + -7] + 1], ap++;
+  [ap + -1] = [[fp + -7] + 2], ap++;
+  [ap + -1] = [[fp + -7] + 3], ap++;
+  [ap + -1] = [[fp + -7] + 4], ap++;
+  [ap + -1] = [[fp + -7] + 5];
+  jmp rel 10 if [ap + -5] != 0, ap++;
+  [ap + -7] = [ap + -1] + 1;
+  jmp rel 6 if [ap + -1] != 0;
+  [fp + -3] = 0;
+  [fp + -4] = 1;
+  -- %{ (memory[ap + 0], memory[fp + -6]) = divmod(memory[ap + -7] * memory[ap + -5], 2**128) %}
+  -- %{ (memory[ap + 1], memory[fp + -4]) = divmod(memory[ap + -7] * memory[ap + -3], 2**128) %}
+  jmp rel 12 if [ap + -6] != 0, ap++;
+  [ap + 1] = [ap + -5] * [ap + -8], ap++;
+  [ap + 1] = [ap + -4] * [ap + -9], ap++;
+  -- %{ memory[ap + 2] = memory[ap + -10] < 18446744073709551616 %}
+  jmp rel 5 if [ap + 2] != 0, ap++;
+  [ap + 0] = [ap + -8] + [ap + -6], ap++;
+  jmp rel 17, ap++;
+  [ap + 0] = [ap + -11], ap++;
+  jmp rel 14, ap++;
+  [ap + 1] = [ap + -6] * [ap + -7], ap++;
+  [ap + 1] = [ap + -5] * [ap + -8], ap++;
+  [ap + -7] = 0, ap++;
+  [ap + -6] = 0, ap++;
+  -- %{ memory[ap + 0] = memory[ap + -11] < 18446744073709551616 %}
+  jmp rel 5 if [ap + 0] != 0, ap++;
+  [ap + -2] = [ap + -11] + [ap + -9];
+  jmp rel 3;
+  [ap + -2] = [ap + -12];
+  [ap + 0] = [ap + -2] + 340282366920938463426481119284349108224, ap++;
+  [ap + -1] = [[fp + -7] + 6];
+  [fp + -5] = [ap + -5] + [ap + -7];
+  [fp + -3] = [ap + -4] + [ap + -6];
+  jmp rel 41;
+  [ap + 0] = [fp + -7] + 9, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = [ap + -46], ap++;
+  [ap + 0] = [ap + -46], ap++;
+  [ap + 0] = [ap + -48], ap++;
+  [ap + 0] = [fp + -6], ap++;
+  [ap + 0] = [ap + -42], ap++;
+  [ap + 0] = [ap + -44], ap++;
+  [ap + 0] = [ap + -52], ap++;
+  [ap + 0] = [fp + -5], ap++;
+  [ap + 0] = [ap + -44], ap++;
+  [ap + 0] = [ap + -46], ap++;
+  [ap + 0] = [ap + -55], ap++;
+  [ap + 0] = [fp + -6], ap++;
+  [ap + 0] = [ap + -46], ap++;
+  [ap + 0] = [ap + -48], ap++;
+  [ap + 0] = [ap + -59], ap++;
+  [ap + 0] = [fp + -5], ap++;
+  [ap + 0] = [ap + -48], ap++;
+  [ap + 0] = [ap + -50], ap++;
+  [ap + 0] = [fp + -4], ap++;
+  [ap + 0] = [ap + -63], ap++;
+  [ap + 0] = [ap + -50], ap++;
+  [ap + 0] = [ap + -52], ap++;
+  [ap + 0] = [fp + -4], ap++;
+  [ap + 0] = [ap + -66], ap++;
+  [ap + 0] = [ap + -52], ap++;
+  [ap + 0] = [ap + -54], ap++;
+  [ap + 0] = [fp + -3], ap++;
+  [ap + 0] = [ap + -71], ap++;
+  [ap + 0] = [ap + -54], ap++;
+  [ap + 0] = [ap + -56], ap++;
+  [ap + 0] = [fp + -3], ap++;
+  [ap + 0] = [ap + -74], ap++;
+  [ap + 0] = [ap + -56], ap++;
+  [ap + 0] = [ap + -58], ap++;
+  ret;
+  ap += 32;
+  [ap + 0] = [fp + -7] + 7, ap++;
+  [ap + 0] = 1, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = 0, ap++;
+  [ap + 0] = [ap + -74], ap++;
+  [ap + 0] = [ap + -73], ap++;
+  [ap + 0] = [ap + -69], ap++;
+  [ap + 0] = [fp + -6], ap++;
+  [ap + 0] = [ap + -78], ap++;
+  [ap + 0] = [ap + -75], ap++;
+  [ap + 0] = [ap + -72], ap++;
+  [ap + 0] = [fp + -4], ap++;
+  ret;
+}
