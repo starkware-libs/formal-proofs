@@ -5,8 +5,8 @@ language using the Lean programming language and proof assistant.
 
 ## Contents
 
-The folder [Stwo](Stwo) contains a proof of the soundness of the AIR encoding used by the Cairo 
-S-two prover. To compile and check that proof, follow the instructions in 
+The folder [Stwo](Stwo) contains a proof of the soundness of the AIR encoding used by the Cairo
+S-two prover. To compile and check that proof, follow the instructions in
 [Stwo/README.md](Stwo/README.md).
 
 The folder [Verification/Semantics](Verification/Semantics) contains a specification of the Cairo
@@ -40,8 +40,7 @@ including:
 - digital signature validation
 - procedures for simulating dictionary access in a read-only enviroment.
 
-Details can be found in the file [README.md](lean3/README.md) in that folder.
-
+Details can be found in the file [lean3/README.md](lean3/README.md).
 
 ## Publications
 
@@ -50,9 +49,15 @@ Details can be found in the file [README.md](lean3/README.md) in that folder.
 
 - Our verification tools and our verification of CairoZero code used for elliptic curve operations
   and to validate cryptographic signatures are described in the paper
-  [A proof-producing compiler for blockchain applications](https://link.springer.com/article/10.1007/s10817-025-09723-y) 
-  and the earlier 
+  [A proof-producing compiler for blockchain applications](https://link.springer.com/article/10.1007/s10817-025-09723-y)
+  and the earlier
   [conference version](https://doi.org/10.4230/LIPIcs.ITP.2023.7).
+
+- Our verification of the S-two encoding of Cairo execution traces is described in the report
+  [Formal verification of the S-two AIR](https://arxiv.org/abs/2606.04311).
+
+See also the blog post,
+[StarkWare’s Gold Standard of Soundness with Formal Verification](https://starkware.co/blog/starkwares-gold-standard-of-soundness-with-formal-verification/).
 
 ## Build
 
